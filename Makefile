@@ -26,7 +26,13 @@ fmt:
 vet:
 	go vet ./...
 
+sim-build:
+	go build -o bin/az-simulator ./simulator/cmd/az
+
+sim-test: build sim-build
+	AZFLOCI_AZ_PATH=./bin/az-simulator AZFLOCI_SIM_STATE=$$(mktemp) go test -race -tags=e2e -timeout 120s -v ./tests/e2e/...
+
 clean:
 	rm -rf bin/ dist/
 
-all: fmt vet lint test build
+all: fmt vet lint test build sim-build
