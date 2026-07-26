@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -17,11 +18,16 @@ type CLIExecutorImpl struct {
 	azPath string
 }
 
-// NewCLIExecutorImpl creates an executor that finds `az` on PATH.
+// NewCLIExecutorImpl creates an executor that uses `az` from PATH.
+// If the AZFLOCI_AZ_PATH env var is set, that path is used instead,
+// enabling drop-in replacement with the Azure simulator binary.
 func NewCLIExecutorImpl() *CLIExecutorImpl {
-	p, _ := exec.LookPath("az")
+	p := os.Getenv("AZFLOCI_AZ_PATH")
 	if p == "" {
-		p = "az"
+		p, _ = exec.LookPath("az")
+		if p == "" {
+			p = "az"
+		}
 	}
 	return &CLIExecutorImpl{azPath: p}
 }
