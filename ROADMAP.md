@@ -44,17 +44,17 @@
 - Lint (golangci-lint), unit tests, build, simulator E2E tests
 - Makefile targets: `lint-ci`, `test-all`, `test-sim-unit`, `sim-test`
 
-## Phase 9: Networking Simulation 🔜
+## Phase 9: Networking Simulation ✅
 - `az network vnet create/show/list/delete`
 - `az network nsg create/show/list/delete`, `nsg rule add`
 - `az network public-ip create/show/list/delete`
 - CIDR validation, subnet carving
 
-## Phase 10: VM Simulation 🔜
+## Phase 10: VM Simulation ✅
 - `az vm create/show/list/delete/start/stop/restart/deallocate`
 - State machine (Creating → Running → Stopped → Deallocated)
 
-## Phase 11: Drift Detection 🔜
+## Phase 11: Drift Detection ✅
 - `azfloci drift snapshot` — capture current state
 - `azfloci drift compare` — diff live vs. snapshot
 - `azfloci drift report` — human-readable + JSON diff

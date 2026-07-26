@@ -4,6 +4,15 @@ All notable changes to azfloci are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.0] — 2025-07-26
+## [0.3.0] — 2025-07-27
+
+### Added
+- **Networking Simulation**: VNet, Subnet, NSG, NSG Rule, Public IP — full CRUD with CIDR prefix support, cascade operations, 4-word command routing.
+- **VM Simulation**: Full VM lifecycle with state machine (Creating → Running → Stopped → Deallocated). Commands: `vm create/show/list/delete/start/stop/restart/deallocate`.
+- **Drift Detection Engine**: `azfloci drift snapshot` captures state, `drift compare` diffs two snapshots, `drift report` compares live state against baseline. Human-readable and JSON output formats.
+- **Router 4-word dispatch**: Supports `network vnet subnet create` style commands.
+- **40+ new tests**: Network store (12), Network handlers (7), VM store (4), VM handlers (6), Drift engine (7).
+
 
 ### Added
 - **Storage Account Simulation**: Full CRUD for storage accounts, blob containers, and blobs (`az storage account/container/blob create/show/list/delete`). Cascade deletes propagate from account → containers → blobs.

@@ -166,6 +166,161 @@ type VaultKey struct {
 	Version   string            `json:"version"`
 }
 
+// --- Networking types ---
+
+// VNet mirrors az network vnet show JSON output.
+type VNet struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	AddressSpace      AddressSpace      `json:"addressSpace"`
+	Subnets           []Subnet          `json:"subnets"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	Type              string            `json:"type"`
+}
+
+// AddressSpace holds CIDR prefixes for a VNet.
+type AddressSpace struct {
+	AddressPrefixes []string `json:"addressPrefixes"`
+}
+
+// Subnet mirrors az network vnet subnet show JSON output.
+type Subnet struct {
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	AddressPrefix     string `json:"addressPrefix"`
+	ProvisioningState string `json:"provisioningState"`
+	NSG               *NSGRef `json:"networkSecurityGroup,omitempty"`
+}
+
+// NSGRef is a reference to an NSG by ID.
+type NSGRef struct {
+	ID string `json:"id"`
+}
+
+// NSG mirrors az network nsg show JSON output.
+type NSG struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	SecurityRules     []NSGRule         `json:"securityRules"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	Type              string            `json:"type"`
+}
+
+// NSGRule mirrors az network nsg rule show JSON output.
+type NSGRule struct {
+	ID                     string `json:"id"`
+	Name                   string `json:"name"`
+	Priority               int    `json:"priority"`
+	Direction              string `json:"direction"`
+	Access                 string `json:"access"`
+	Protocol               string `json:"protocol"`
+	SourceAddressPrefix    string `json:"sourceAddressPrefix"`
+	SourcePortRange        string `json:"sourcePortRange"`
+	DestAddressPrefix      string `json:"destinationAddressPrefix"`
+	DestPortRange          string `json:"destinationPortRange"`
+	ProvisioningState      string `json:"provisioningState"`
+}
+
+// PublicIP mirrors az network public-ip show JSON output.
+type PublicIP struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	IPAddress         string            `json:"ipAddress"`
+	PublicIPVersion   string            `json:"publicIPAllocationMethod"`
+	AllocationMethod  string            `json:"publicIpAllocationMethod"`
+	SKU               PublicIPSKU       `json:"sku"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	Type              string            `json:"type"`
+}
+
+// PublicIPSKU is the public IP pricing tier.
+type PublicIPSKU struct {
+	Name string `json:"name"`
+	Tier string `json:"tier"`
+}
+
+// --- VM types ---
+
+// VMState represents the power state of a virtual machine.
+type VMState string
+
+const (
+	VMStateCreating     VMState = "Creating"
+	VMStateRunning      VMState = "Running"
+	VMStateStopped      VMState = "Stopped"
+	VMStateDeallocated  VMState = "Deallocated"
+	VMStateDeleting     VMState = "Deleting"
+)
+
+// VirtualMachine mirrors az vm show JSON output.
+type VirtualMachine struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	VMSize            string            `json:"hardwareProfile.vmSize"`
+	HardwareProfile   HardwareProfile   `json:"hardwareProfile"`
+	StorageProfile    VMStorageProfile  `json:"storageProfile"`
+	OSProfile         OSProfile         `json:"osProfile"`
+	NetworkProfile    NetworkProfile    `json:"networkProfile"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	PowerState        VMState           `json:"powerState"`
+	Type              string            `json:"type"`
+}
+
+// HardwareProfile holds the VM size.
+type HardwareProfile struct {
+	VMSize string `json:"vmSize"`
+}
+
+// VMStorageProfile holds OS disk and image reference.
+type VMStorageProfile struct {
+	ImageReference ImageReference `json:"imageReference"`
+	OSDisk         OSDisk         `json:"osDisk"`
+}
+
+// ImageReference identifies the VM image.
+type ImageReference struct {
+	Publisher string `json:"publisher"`
+	Offer     string `json:"offer"`
+	SKU       string `json:"sku"`
+	Version   string `json:"version"`
+}
+
+// OSDisk holds OS disk properties.
+type OSDisk struct {
+	Name         string `json:"name"`
+	CreateOption string `json:"createOption"`
+	DiskSizeGB   int    `json:"diskSizeGB"`
+	OSType       string `json:"osType"`
+}
+
+// OSProfile holds computer name and admin user.
+type OSProfile struct {
+	ComputerName  string `json:"computerName"`
+	AdminUsername string `json:"adminUsername"`
+}
+
+// NetworkProfile holds NIC references.
+type NetworkProfile struct {
+	NetworkInterfaces []NICRef `json:"networkInterfaces"`
+}
+
+// NICRef is a reference to a NIC by ID.
+type NICRef struct {
+	ID string `json:"id"`
+}
+
 // Data is the top-level persisted state.
 type Data struct {
 	ActiveSubscription string                   `json:"active_subscription"`
@@ -180,6 +335,12 @@ type Data struct {
 	KeyVaults    map[string]*KeyVault                `json:"key_vaults,omitempty"`
 	VaultSecrets map[string]map[string]*VaultSecret  `json:"vault_secrets,omitempty"`   // vault -> name -> secret
 	VaultKeys    map[string]map[string]*VaultKey     `json:"vault_keys,omitempty"`      // vault -> name -> key
+	// Networking
+	VNets     map[string]*VNet     `json:"vnets,omitempty"`
+	NSGs      map[string]*NSG      `json:"nsgs,omitempty"`
+	PublicIPs map[string]*PublicIP `json:"public_ips,omitempty"`
+	// VMs
+	VMs map[string]*VirtualMachine `json:"vms,omitempty"`
 }
 
 // Store is a thread-safe, JSON-file-backed Azure state store.
@@ -240,6 +401,18 @@ func NewStore(filePath string) (*Store, error) {
 	if d.VaultKeys == nil {
 		d.VaultKeys = make(map[string]map[string]*VaultKey)
 	}
+	if d.VNets == nil {
+		d.VNets = make(map[string]*VNet)
+	}
+	if d.NSGs == nil {
+		d.NSGs = make(map[string]*NSG)
+	}
+	if d.PublicIPs == nil {
+		d.PublicIPs = make(map[string]*PublicIP)
+	}
+	if d.VMs == nil {
+		d.VMs = make(map[string]*VirtualMachine)
+	}
 	s.data = &d
 	return s, nil
 }
@@ -270,6 +443,10 @@ func seedData() *Data {
 		KeyVaults:       make(map[string]*KeyVault),
 		VaultSecrets:    make(map[string]map[string]*VaultSecret),
 		VaultKeys:       make(map[string]map[string]*VaultKey),
+		VNets:           make(map[string]*VNet),
+		NSGs:            make(map[string]*NSG),
+		PublicIPs:       make(map[string]*PublicIP),
+		VMs:             make(map[string]*VirtualMachine),
 	}
 }
 
@@ -968,4 +1145,443 @@ func (s *Store) activeSub() *Subscription {
 		return &s.data.Subscriptions[0]
 	}
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// VNet CRUD
+// ---------------------------------------------------------------------------
+
+// CreateVNet creates a virtual network. addressPrefixes defaults to ["10.0.0.0/16"].
+func (s *Store) CreateVNet(name, rg, location string, addressPrefixes []string, tags map[string]string) (*VNet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.VNets[name]; exists {
+		return nil, fmt.Errorf("vnet '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	if sub == nil {
+		return nil, fmt.Errorf("no active subscription")
+	}
+	if len(addressPrefixes) == 0 {
+		addressPrefixes = []string{"10.0.0.0/16"}
+	}
+	vnet := &VNet{
+		ID:            fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/virtualNetworks/%s", sub.ID, rg, name),
+		Name:          name,
+		ResourceGroup: rg,
+		Location:      location,
+		AddressSpace:  AddressSpace{AddressPrefixes: addressPrefixes},
+		Subnets:       []Subnet{},
+		Tags:          tags,
+		ProvisioningState: "Succeeded",
+		Type:          "Microsoft.Network/virtualNetworks",
+	}
+	s.data.VNets[name] = vnet
+	return vnet, s.persist()
+}
+
+// GetVNet returns a VNet by name.
+func (s *Store) GetVNet(name string) *VNet {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.VNets[name]
+}
+
+// ListVNets lists VNets, optionally filtered by resource group.
+func (s *Store) ListVNets(rg string) []VNet {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []VNet
+	for _, v := range s.data.VNets {
+		if rg == "" || v.ResourceGroup == rg {
+			out = append(out, *v)
+		}
+	}
+	return out
+}
+
+// DeleteVNet removes a VNet.
+func (s *Store) DeleteVNet(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.VNets[name]; !ok {
+		return fmt.Errorf("vnet '%s' not found", name)
+	}
+	delete(s.data.VNets, name)
+	return s.persist()
+}
+
+// CreateSubnet adds a subnet to a VNet.
+func (s *Store) CreateSubnet(vnetName, subnetName, addressPrefix string) (*Subnet, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vnet, ok := s.data.VNets[vnetName]
+	if !ok {
+		return nil, fmt.Errorf("vnet '%s' not found", vnetName)
+	}
+	for _, sub := range vnet.Subnets {
+		if sub.Name == subnetName {
+			return nil, fmt.Errorf("subnet '%s' already exists in vnet '%s'", subnetName, vnetName)
+		}
+	}
+	subnet := Subnet{
+		ID:                vnet.ID + "/subnets/" + subnetName,
+		Name:              subnetName,
+		AddressPrefix:     addressPrefix,
+		ProvisioningState: "Succeeded",
+	}
+	vnet.Subnets = append(vnet.Subnets, subnet)
+	return &subnet, s.persist()
+}
+
+// GetSubnet returns a subnet from a VNet.
+func (s *Store) GetSubnet(vnetName, subnetName string) *Subnet {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	vnet, ok := s.data.VNets[vnetName]
+	if !ok {
+		return nil
+	}
+	for i := range vnet.Subnets {
+		if vnet.Subnets[i].Name == subnetName {
+			return &vnet.Subnets[i]
+		}
+	}
+	return nil
+}
+
+// ListSubnets returns all subnets of a VNet.
+func (s *Store) ListSubnets(vnetName string) []Subnet {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	vnet, ok := s.data.VNets[vnetName]
+	if !ok {
+		return nil
+	}
+	return vnet.Subnets
+}
+
+// DeleteSubnet removes a subnet from a VNet.
+func (s *Store) DeleteSubnet(vnetName, subnetName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vnet, ok := s.data.VNets[vnetName]
+	if !ok {
+		return fmt.Errorf("vnet '%s' not found", vnetName)
+	}
+	for i, sub := range vnet.Subnets {
+		if sub.Name == subnetName {
+			vnet.Subnets = append(vnet.Subnets[:i], vnet.Subnets[i+1:]...)
+			return s.persist()
+		}
+	}
+	return fmt.Errorf("subnet '%s' not found in vnet '%s'", subnetName, vnetName)
+}
+
+// ---------------------------------------------------------------------------
+// NSG CRUD
+// ---------------------------------------------------------------------------
+
+// CreateNSG creates a network security group.
+func (s *Store) CreateNSG(name, rg, location string, tags map[string]string) (*NSG, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.NSGs[name]; exists {
+		return nil, fmt.Errorf("nsg '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	if sub == nil {
+		return nil, fmt.Errorf("no active subscription")
+	}
+	nsg := &NSG{
+		ID:                fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s", sub.ID, rg, name),
+		Name:              name,
+		ResourceGroup:     rg,
+		Location:          location,
+		SecurityRules:     []NSGRule{},
+		Tags:              tags,
+		ProvisioningState: "Succeeded",
+		Type:              "Microsoft.Network/networkSecurityGroups",
+	}
+	s.data.NSGs[name] = nsg
+	return nsg, s.persist()
+}
+
+// GetNSG returns an NSG by name.
+func (s *Store) GetNSG(name string) *NSG {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.NSGs[name]
+}
+
+// ListNSGs lists NSGs, optionally filtered by resource group.
+func (s *Store) ListNSGs(rg string) []NSG {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []NSG
+	for _, n := range s.data.NSGs {
+		if rg == "" || n.ResourceGroup == rg {
+			out = append(out, *n)
+		}
+	}
+	return out
+}
+
+// DeleteNSG removes an NSG.
+func (s *Store) DeleteNSG(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.NSGs[name]; !ok {
+		return fmt.Errorf("nsg '%s' not found", name)
+	}
+	delete(s.data.NSGs, name)
+	return s.persist()
+}
+
+// CreateNSGRule adds a security rule to an NSG.
+func (s *Store) CreateNSGRule(nsgName string, rule NSGRule) (*NSGRule, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	nsg, ok := s.data.NSGs[nsgName]
+	if !ok {
+		return nil, fmt.Errorf("nsg '%s' not found", nsgName)
+	}
+	for _, r := range nsg.SecurityRules {
+		if r.Name == rule.Name {
+			return nil, fmt.Errorf("rule '%s' already exists in nsg '%s'", rule.Name, nsgName)
+		}
+	}
+	rule.ID = nsg.ID + "/securityRules/" + rule.Name
+	rule.ProvisioningState = "Succeeded"
+	nsg.SecurityRules = append(nsg.SecurityRules, rule)
+	return &rule, s.persist()
+}
+
+// DeleteNSGRule removes a security rule from an NSG.
+func (s *Store) DeleteNSGRule(nsgName, ruleName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	nsg, ok := s.data.NSGs[nsgName]
+	if !ok {
+		return fmt.Errorf("nsg '%s' not found", nsgName)
+	}
+	for i, r := range nsg.SecurityRules {
+		if r.Name == ruleName {
+			nsg.SecurityRules = append(nsg.SecurityRules[:i], nsg.SecurityRules[i+1:]...)
+			return s.persist()
+		}
+	}
+	return fmt.Errorf("rule '%s' not found in nsg '%s'", ruleName, nsgName)
+}
+
+// ---------------------------------------------------------------------------
+// Public IP CRUD
+// ---------------------------------------------------------------------------
+
+// fakeIPCounter is used to generate sequential fake IPs.
+var fakeIPCounter int
+
+// CreatePublicIP creates a public IP address.
+func (s *Store) CreatePublicIP(name, rg, location, sku, allocation string, tags map[string]string) (*PublicIP, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.PublicIPs[name]; exists {
+		return nil, fmt.Errorf("public-ip '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	if sub == nil {
+		return nil, fmt.Errorf("no active subscription")
+	}
+	if sku == "" {
+		sku = "Standard"
+	}
+	if allocation == "" {
+		allocation = "Static"
+	}
+	fakeIPCounter++
+	pip := &PublicIP{
+		ID:                fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/publicIPAddresses/%s", sub.ID, rg, name),
+		Name:              name,
+		ResourceGroup:     rg,
+		Location:          location,
+		IPAddress:         fmt.Sprintf("20.0.%d.%d", fakeIPCounter/256, fakeIPCounter%256),
+		PublicIPVersion:   allocation,
+		AllocationMethod:  allocation,
+		SKU:               PublicIPSKU{Name: sku, Tier: "Regional"},
+		Tags:              tags,
+		ProvisioningState: "Succeeded",
+		Type:              "Microsoft.Network/publicIPAddresses",
+	}
+	s.data.PublicIPs[name] = pip
+	return pip, s.persist()
+}
+
+// GetPublicIP returns a PublicIP by name.
+func (s *Store) GetPublicIP(name string) *PublicIP {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.PublicIPs[name]
+}
+
+// ListPublicIPs lists public IPs, optionally filtered by resource group.
+func (s *Store) ListPublicIPs(rg string) []PublicIP {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []PublicIP
+	for _, p := range s.data.PublicIPs {
+		if rg == "" || p.ResourceGroup == rg {
+			out = append(out, *p)
+		}
+	}
+	return out
+}
+
+// DeletePublicIP removes a public IP.
+func (s *Store) DeletePublicIP(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.PublicIPs[name]; !ok {
+		return fmt.Errorf("public-ip '%s' not found", name)
+	}
+	delete(s.data.PublicIPs, name)
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// VM CRUD + State Machine
+// ---------------------------------------------------------------------------
+
+// validVMTransitions defines allowed power state transitions.
+var validVMTransitions = map[VMState][]VMState{
+	VMStateCreating:    {VMStateRunning},
+	VMStateRunning:     {VMStateStopped, VMStateDeallocated, VMStateDeleting},
+	VMStateStopped:     {VMStateRunning, VMStateDeallocated, VMStateDeleting},
+	VMStateDeallocated: {VMStateRunning, VMStateDeleting},
+}
+
+// CreateVM creates a virtual machine in the Running state.
+func (s *Store) CreateVM(name, rg, location, vmSize, image, adminUser string, tags map[string]string) (*VirtualMachine, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.VMs[name]; exists {
+		return nil, fmt.Errorf("vm '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	if sub == nil {
+		return nil, fmt.Errorf("no active subscription")
+	}
+	if vmSize == "" {
+		vmSize = "Standard_B1s"
+	}
+	if adminUser == "" {
+		adminUser = "azureuser"
+	}
+	// Parse image URN: publisher:offer:sku:version
+	publisher, offer, sku, version := "Canonical", "UbuntuServer", "18.04-LTS", "latest"
+	parts := splitImage(image)
+	if len(parts) == 4 {
+		publisher, offer, sku, version = parts[0], parts[1], parts[2], parts[3]
+	}
+	vm := &VirtualMachine{
+		ID:            fmt.Sprintf("/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachines/%s", sub.ID, rg, name),
+		Name:          name,
+		ResourceGroup: rg,
+		Location:      location,
+		VMSize:        vmSize,
+		HardwareProfile: HardwareProfile{VMSize: vmSize},
+		StorageProfile: VMStorageProfile{
+			ImageReference: ImageReference{Publisher: publisher, Offer: offer, SKU: sku, Version: version},
+			OSDisk:         OSDisk{Name: name + "-osdisk", CreateOption: "FromImage", DiskSizeGB: 30, OSType: "Linux"},
+		},
+		OSProfile:     OSProfile{ComputerName: name, AdminUsername: adminUser},
+		NetworkProfile: NetworkProfile{NetworkInterfaces: []NICRef{}},
+		Tags:          tags,
+		ProvisioningState: "Succeeded",
+		PowerState:    VMStateRunning,
+		Type:          "Microsoft.Compute/virtualMachines",
+	}
+	s.data.VMs[name] = vm
+	return vm, s.persist()
+}
+
+// GetVM returns a VM by name.
+func (s *Store) GetVM(name string) *VirtualMachine {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.VMs[name]
+}
+
+// ListVMs lists VMs, optionally filtered by resource group.
+func (s *Store) ListVMs(rg string) []VirtualMachine {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []VirtualMachine
+	for _, vm := range s.data.VMs {
+		if rg == "" || vm.ResourceGroup == rg {
+			out = append(out, *vm)
+		}
+	}
+	return out
+}
+
+// DeleteVM removes a VM.
+func (s *Store) DeleteVM(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vm, ok := s.data.VMs[name]
+	if !ok {
+		return fmt.Errorf("vm '%s' not found", name)
+	}
+	// Must be in a state that allows deletion
+	if !isValidTransition(vm.PowerState, VMStateDeleting) {
+		return fmt.Errorf("cannot delete vm '%s' in state '%s'", name, vm.PowerState)
+	}
+	delete(s.data.VMs, name)
+	return s.persist()
+}
+
+// TransitionVM changes a VM's power state with state machine validation.
+func (s *Store) TransitionVM(name string, target VMState) (*VirtualMachine, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vm, ok := s.data.VMs[name]
+	if !ok {
+		return nil, fmt.Errorf("vm '%s' not found", name)
+	}
+	if !isValidTransition(vm.PowerState, target) {
+		return nil, fmt.Errorf("invalid transition: %s -> %s for vm '%s'", vm.PowerState, target, name)
+	}
+	vm.PowerState = target
+	return vm, s.persist()
+}
+
+// isValidTransition checks if a state transition is allowed.
+func isValidTransition(from, to VMState) bool {
+	allowed, ok := validVMTransitions[from]
+	if !ok {
+		return false
+	}
+	for _, a := range allowed {
+		if a == to {
+			return true
+		}
+	}
+	return false
+}
+
+// splitImage splits a URN like "publisher:offer:sku:version".
+func splitImage(image string) []string {
+	if image == "" {
+		return nil
+	}
+	parts := make([]string, 0, 4)
+	start := 0
+	for i := 0; i < len(image); i++ {
+		if image[i] == ':' {
+			parts = append(parts, image[start:i])
+			start = i + 1
+		}
+	}
+	parts = append(parts, image[start:])
+	return parts
 }

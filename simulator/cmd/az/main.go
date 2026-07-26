@@ -32,6 +32,8 @@ func main() {
 	handlers.RegisterResourceHandlers(r, store)
 	handlers.RegisterStorageHandlers(r, store)
 	handlers.RegisterKeyVaultHandlers(r, store)
+	handlers.RegisterNetworkHandlers(r, store)
+	handlers.RegisterVMHandlers(r, store)
 
 	// os.Args[0] is the binary name; pass the rest as the command line.
 	exitCode := r.Dispatch(os.Args[1:])

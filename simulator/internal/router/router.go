@@ -40,7 +40,13 @@ func (r *Router) Dispatch(args []string) int {
 	// Strip global flags that appear before the command: --output, -o, --query
 	cleaned := stripGlobalFlags(args)
 
-	// Try longest prefix first (3 words, then 2, then 1).
+	// Try longest prefix first (4 words, then 3, then 2, then 1).
+	if len(cleaned) >= 4 {
+		key := cleaned[0] + " " + cleaned[1] + " " + cleaned[2] + " " + cleaned[3]
+		if fn, ok := r.routes[key]; ok {
+			return fn(cleaned[4:])
+		}
+	}
 	if len(cleaned) >= 3 {
 		key := cleaned[0] + " " + cleaned[1] + " " + cleaned[2]
 		if fn, ok := r.routes[key]; ok {
@@ -188,5 +194,33 @@ Commands:
   keyvault key create        Create a key
   keyvault key show          Show a key
   keyvault key list          List keys
-  keyvault key delete        Delete a key`)
+  keyvault key delete        Delete a key
+
+  network vnet create        Create a virtual network
+  network vnet show          Show a virtual network
+  network vnet list          List virtual networks
+  network vnet delete        Delete a virtual network
+  network vnet subnet create Create a subnet
+  network vnet subnet show   Show a subnet
+  network vnet subnet list   List subnets
+  network vnet subnet delete Delete a subnet
+  network nsg create         Create a network security group
+  network nsg show           Show a network security group
+  network nsg list           List network security groups
+  network nsg delete         Delete a network security group
+  network nsg rule create    Create an NSG rule
+  network nsg rule delete    Delete an NSG rule
+  network public-ip create   Create a public IP address
+  network public-ip show     Show a public IP address
+  network public-ip list     List public IP addresses
+  network public-ip delete   Delete a public IP address
+
+  vm create                  Create a virtual machine
+  vm show                    Show a virtual machine
+  vm list                    List virtual machines
+  vm delete                  Delete a virtual machine
+  vm start                   Start a virtual machine
+  vm stop                    Stop a virtual machine
+  vm restart                 Restart a virtual machine
+  vm deallocate              Deallocate a virtual machine`)
 }
