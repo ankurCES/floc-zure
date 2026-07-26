@@ -1,0 +1,12 @@
+bin/
+dist/
+.git/
+.github/
+*.md
+!README.md
+LICENSE
+.goreleaser.yml
+.gitignore
+docs/
+tests/
+**/*_test.go

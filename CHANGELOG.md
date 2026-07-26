@@ -3,6 +3,15 @@
 All notable changes to azfloci are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0] — 2026-07-27
+
+### Added
+- **ARM Template Engine**: Parser with expression evaluation (parameters, variables, concat, toLower, toUpper, uniqueString, resourceId, format, resourceGroup().location). Deployer creates simulated resources from ARM JSON. CLI commands: `azfloci deploy create/validate/show`. Sample templates: storage-account.json, full-stack.json.
+- **Docker Compose**: Multi-stage Dockerfile, standalone simulator image (Dockerfile.simulator), docker-compose.yml with shared state volume, .dockerignore.
+- **Plugin Architecture**: `ResourceProvider` interface, thread-safe `Registry` with type routing, built-in Storage and Compute providers, CRUD delegation. 15 plugin tests.
+- **Cost Estimation**: Estimator with embedded pricing for 6 resource types (Storage, KeyVault, Compute, VNet, PublicIP, NSG). Text and JSON output. CLI: `azfloci cost estimate --file resources.json`. 11 cost tests.
+- 22 ARM parser tests, 7 deployer tests.
+
 ## [0.3.0] — 2026-07-27
 ## [0.2.0] — 2026-07-26
 

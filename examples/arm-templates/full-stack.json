@@ -1,0 +1,98 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "prefix": {
+      "type": "string",
+      "defaultValue": "demo",
+      "metadata": { "description": "Resource name prefix" }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus"
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_B2s"
+    }
+  },
+  "variables": {
+    "storageName": "[concat(parameters('prefix'), 'storage')]",
+    "vnetName": "[concat(parameters('prefix'), '-vnet')]",
+    "nsgName": "[concat(parameters('prefix'), '-nsg')]",
+    "pipName": "[concat(parameters('prefix'), '-pip')]",
+    "vmName": "[concat(parameters('prefix'), '-vm')]",
+    "kvName": "[concat(parameters('prefix'), '-kv')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('storageName')]",
+      "location": "[parameters('location')]",
+      "kind": "StorageV2",
+      "sku": { "name": "Standard_LRS" },
+      "tags": { "stack": "[parameters('prefix')]" }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": ["10.0.0.0/16"]
+        }
+      },
+      "tags": { "stack": "[parameters('prefix')]" }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('nsgName')]",
+      "location": "[parameters('location')]",
+      "tags": { "stack": "[parameters('prefix')]" }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('pipName')]",
+      "location": "[parameters('location')]",
+      "tags": { "stack": "[parameters('prefix')]" }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('kvName')]",
+      "location": "[parameters('location')]",
+      "tags": { "stack": "[parameters('prefix')]" },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2023-07-01",
+      "name": "[variables('vmName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        }
+      },
+      "tags": { "stack": "[parameters('prefix')]" }
+    }
+  ],
+  "outputs": {
+    "vmId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Compute/virtualMachines', variables('vmName'))]"
+    },
+    "storageId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  # Full azfloci CLI with built-in simulator
+  azfloci:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: azfloci
+    environment:
+      - AZFLOCI_AZ_PATH=/usr/local/bin/az
+      - AZFLOCI_SIM_STATE=/data/state.json
+    volumes:
+      - sim-state:/data
+      - ./examples:/workspace/examples:ro
+      - ./workflows:/workspace/workflows:ro
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+
+  # Standalone simulator — use for testing external tools against fake az
+  simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    container_name: az-simulator
+    environment:
+      - AZFLOCI_SIM_STATE=/data/state.json
+    volumes:
+      - sim-state:/data
+    ports:
+      - "8080:8080"  # reserved for future HTTP API
+
+volumes:
+  sim-state:
+    driver: local
