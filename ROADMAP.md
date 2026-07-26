@@ -16,5 +16,5 @@
 ## Phase 16: Plugin Architecture ✅
 ## Phase 17: Cost Estimation ✅
 
-## Phase 14: Service Bus Simulation 🔜
-## Phase 15: Azure Functions Simulation 🔜
+## Phase 14: Service Bus Simulation ✅
+## Phase 15: Azure Functions Simulation ✅

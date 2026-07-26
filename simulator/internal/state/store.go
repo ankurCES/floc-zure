@@ -321,6 +321,135 @@ type NICRef struct {
 	ID string `json:"id"`
 }
 
+// --- Service Bus types ---
+
+// ServiceBusNamespace mirrors az servicebus namespace show JSON output.
+type ServiceBusNamespace struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	SKU               ServiceBusSKU     `json:"sku"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	CreatedAt         string            `json:"createdAt"`
+	ServiceBusEndpoint string           `json:"serviceBusEndpoint"`
+	Type              string            `json:"type"`
+}
+
+// ServiceBusSKU is the pricing tier for a namespace.
+type ServiceBusSKU struct {
+	Name     string `json:"name"`
+	Tier     string `json:"tier"`
+	Capacity int    `json:"capacity"`
+}
+
+// ServiceBusQueue mirrors az servicebus queue show JSON output.
+type ServiceBusQueue struct {
+	ID                       string `json:"id"`
+	Name                     string `json:"name"`
+	NamespaceName            string `json:"namespaceName"`
+	MaxSizeInMegabytes       int    `json:"maxSizeInMegabytes"`
+	MessageCount             int64  `json:"messageCount"`
+	DeadLetterMessageCount   int64  `json:"countDetails.deadLetterMessageCount"`
+	DefaultMessageTimeToLive string `json:"defaultMessageTimeToLive"`
+	LockDuration             string `json:"lockDuration"`
+	RequiresSession          bool   `json:"requiresSession"`
+	Status                   string `json:"status"`
+	CreatedAt                string `json:"createdAt"`
+	Type                     string `json:"type"`
+}
+
+// ServiceBusTopic mirrors az servicebus topic show JSON output.
+type ServiceBusTopic struct {
+	ID                       string `json:"id"`
+	Name                     string `json:"name"`
+	NamespaceName            string `json:"namespaceName"`
+	MaxSizeInMegabytes       int    `json:"maxSizeInMegabytes"`
+	DefaultMessageTimeToLive string `json:"defaultMessageTimeToLive"`
+	SubscriptionCount        int    `json:"subscriptionCount"`
+	Status                   string `json:"status"`
+	CreatedAt                string `json:"createdAt"`
+	Type                     string `json:"type"`
+}
+
+// ServiceBusSubscription mirrors az servicebus topic subscription show JSON output.
+type ServiceBusSubscription struct {
+	ID                       string `json:"id"`
+	Name                     string `json:"name"`
+	TopicName                string `json:"topicName"`
+	NamespaceName            string `json:"namespaceName"`
+	MaxDeliveryCount         int    `json:"maxDeliveryCount"`
+	DefaultMessageTimeToLive string `json:"defaultMessageTimeToLive"`
+	LockDuration             string `json:"lockDuration"`
+	MessageCount             int64  `json:"messageCount"`
+	RequiresSession          bool   `json:"requiresSession"`
+	Status                   string `json:"status"`
+	CreatedAt                string `json:"createdAt"`
+	Type                     string `json:"type"`
+}
+
+// ServiceBusMessage represents a message in a queue or topic subscription.
+type ServiceBusMessage struct {
+	MessageID   string                 `json:"messageId"`
+	Body        string                 `json:"body"`
+	ContentType string                 `json:"contentType,omitempty"`
+	Label       string                 `json:"label,omitempty"`
+	Properties  map[string]interface{} `json:"userProperties,omitempty"`
+	EnqueuedAt  string                 `json:"enqueuedTimeUtc"`
+}
+
+// --- Function App types ---
+
+// FunctionApp mirrors az functionapp show JSON output.
+type FunctionApp struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	Kind              string            `json:"kind"`
+	State             string            `json:"state"`
+	DefaultHostName   string            `json:"defaultHostName"`
+	Runtime           string            `json:"runtime"`
+	RuntimeVersion    string            `json:"runtimeVersion"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	Type              string            `json:"type"`
+}
+
+// Function represents a single function within a function app.
+type Function struct {
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	FunctionApp  string          `json:"functionApp"`
+	TriggerType  string          `json:"triggerType"`
+	IsDisabled   bool            `json:"isDisabled"`
+	Language     string          `json:"language"`
+	ScriptFile   string          `json:"scriptFile,omitempty"`
+	Bindings     []FuncBinding   `json:"bindings,omitempty"`
+	InvokeURL    string          `json:"invokeUrlTemplate"`
+}
+
+// FuncBinding represents an input/output binding on a function.
+type FuncBinding struct {
+	Type      string `json:"type"`
+	Direction string `json:"direction"`
+	Name      string `json:"name"`
+}
+
+// FunctionInvocation records a simulated function invocation.
+type FunctionInvocation struct {
+	ID            string `json:"id"`
+	FunctionName  string `json:"functionName"`
+	FunctionApp   string `json:"functionApp"`
+	Status        string `json:"status"`
+	StartTime     string `json:"startTime"`
+	EndTime       string `json:"endTime"`
+	DurationMs    int64  `json:"duration"`
+	Input         string `json:"input,omitempty"`
+	Output        string `json:"output,omitempty"`
+}
+
 // Data is the top-level persisted state.
 type Data struct {
 	ActiveSubscription string                   `json:"active_subscription"`
@@ -341,6 +470,16 @@ type Data struct {
 	PublicIPs map[string]*PublicIP `json:"public_ips,omitempty"`
 	// VMs
 	VMs map[string]*VirtualMachine `json:"vms,omitempty"`
+	// Service Bus
+	ServiceBusNamespaces map[string]*ServiceBusNamespace                              `json:"servicebus_namespaces,omitempty"`
+	ServiceBusQueues     map[string]map[string]*ServiceBusQueue                       `json:"servicebus_queues,omitempty"`     // ns -> name -> queue
+	ServiceBusTopics     map[string]map[string]*ServiceBusTopic                       `json:"servicebus_topics,omitempty"`     // ns -> name -> topic
+	ServiceBusSubs       map[string]map[string]map[string]*ServiceBusSubscription     `json:"servicebus_subs,omitempty"`       // ns -> topic -> name -> sub
+	ServiceBusMessages   map[string]map[string][]ServiceBusMessage                    `json:"servicebus_messages,omitempty"`   // ns -> queue -> messages
+	// Function Apps
+	FunctionApps       map[string]*FunctionApp                    `json:"function_apps,omitempty"`
+	Functions          map[string]map[string]*Function            `json:"functions,omitempty"`           // app -> name -> function
+	FunctionInvocations map[string][]FunctionInvocation           `json:"function_invocations,omitempty"` // app -> invocations
 }
 
 // Store is a thread-safe, JSON-file-backed Azure state store.
@@ -413,6 +552,30 @@ func NewStore(filePath string) (*Store, error) {
 	if d.VMs == nil {
 		d.VMs = make(map[string]*VirtualMachine)
 	}
+	if d.ServiceBusNamespaces == nil {
+		d.ServiceBusNamespaces = make(map[string]*ServiceBusNamespace)
+	}
+	if d.ServiceBusQueues == nil {
+		d.ServiceBusQueues = make(map[string]map[string]*ServiceBusQueue)
+	}
+	if d.ServiceBusTopics == nil {
+		d.ServiceBusTopics = make(map[string]map[string]*ServiceBusTopic)
+	}
+	if d.ServiceBusSubs == nil {
+		d.ServiceBusSubs = make(map[string]map[string]map[string]*ServiceBusSubscription)
+	}
+	if d.ServiceBusMessages == nil {
+		d.ServiceBusMessages = make(map[string]map[string][]ServiceBusMessage)
+	}
+	if d.FunctionApps == nil {
+		d.FunctionApps = make(map[string]*FunctionApp)
+	}
+	if d.Functions == nil {
+		d.Functions = make(map[string]map[string]*Function)
+	}
+	if d.FunctionInvocations == nil {
+		d.FunctionInvocations = make(map[string][]FunctionInvocation)
+	}
 	s.data = &d
 	return s, nil
 }
@@ -446,7 +609,15 @@ func seedData() *Data {
 		VNets:           make(map[string]*VNet),
 		NSGs:            make(map[string]*NSG),
 		PublicIPs:       make(map[string]*PublicIP),
-		VMs:             make(map[string]*VirtualMachine),
+		VMs:                  make(map[string]*VirtualMachine),
+		ServiceBusNamespaces: make(map[string]*ServiceBusNamespace),
+		ServiceBusQueues:     make(map[string]map[string]*ServiceBusQueue),
+		ServiceBusTopics:     make(map[string]map[string]*ServiceBusTopic),
+		ServiceBusSubs:       make(map[string]map[string]map[string]*ServiceBusSubscription),
+		ServiceBusMessages:   make(map[string]map[string][]ServiceBusMessage),
+		FunctionApps:         make(map[string]*FunctionApp),
+		Functions:            make(map[string]map[string]*Function),
+		FunctionInvocations:  make(map[string][]FunctionInvocation),
 	}
 }
 
@@ -1584,4 +1755,515 @@ func splitImage(image string) []string {
 	}
 	parts = append(parts, image[start:])
 	return parts
+}
+
+// --- Service Bus ---
+
+// CreateServiceBusNamespace creates a new Service Bus namespace.
+func (s *Store) CreateServiceBusNamespace(name, rg, location, sku string, tags map[string]string) (*ServiceBusNamespace, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.ServiceBusNamespaces[name]; exists {
+		return nil, fmt.Errorf("namespace '%s' already exists", name)
+	}
+	sub := s.data.Subscriptions[0]
+	ns := &ServiceBusNamespace{
+		ID:                 GenerateResourceID(sub.ID, rg, "Microsoft.ServiceBus", "namespaces", name),
+		Name:               name,
+		ResourceGroup:      rg,
+		Location:           location,
+		SKU:                ServiceBusSKU{Name: sku, Tier: sku, Capacity: 1},
+		Tags:               tags,
+		ProvisioningState:  "Succeeded",
+		CreatedAt:          Timestamp(),
+		ServiceBusEndpoint: fmt.Sprintf("https://%s.servicebus.windows.net:443/", name),
+		Type:               "Microsoft.ServiceBus/namespaces",
+	}
+	s.data.ServiceBusNamespaces[name] = ns
+	s.persist()
+	return ns, nil
+}
+
+// GetServiceBusNamespace returns a namespace by name or nil.
+func (s *Store) GetServiceBusNamespace(name string) *ServiceBusNamespace {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.ServiceBusNamespaces[name]
+}
+
+// ListServiceBusNamespaces returns all namespaces, optionally filtered by RG.
+func (s *Store) ListServiceBusNamespaces(rg string) []ServiceBusNamespace {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []ServiceBusNamespace
+	for _, ns := range s.data.ServiceBusNamespaces {
+		if rg == "" || ns.ResourceGroup == rg {
+			out = append(out, *ns)
+		}
+	}
+	return out
+}
+
+// DeleteServiceBusNamespace deletes a namespace and all its queues/topics/subs/messages.
+func (s *Store) DeleteServiceBusNamespace(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.ServiceBusNamespaces[name]; !exists {
+		return fmt.Errorf("namespace '%s' not found", name)
+	}
+	delete(s.data.ServiceBusNamespaces, name)
+	delete(s.data.ServiceBusQueues, name)
+	delete(s.data.ServiceBusTopics, name)
+	delete(s.data.ServiceBusSubs, name)
+	delete(s.data.ServiceBusMessages, name)
+	s.persist()
+	return nil
+}
+
+// CreateServiceBusQueue creates a queue in a namespace.
+func (s *Store) CreateServiceBusQueue(nsName, queueName string, maxSize int) (*ServiceBusQueue, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ns, ok := s.data.ServiceBusNamespaces[nsName]
+	if !ok {
+		return nil, fmt.Errorf("namespace '%s' not found", nsName)
+	}
+	if s.data.ServiceBusQueues[nsName] == nil {
+		s.data.ServiceBusQueues[nsName] = make(map[string]*ServiceBusQueue)
+	}
+	if _, exists := s.data.ServiceBusQueues[nsName][queueName]; exists {
+		return nil, fmt.Errorf("queue '%s' already exists in namespace '%s'", queueName, nsName)
+	}
+	if maxSize <= 0 {
+		maxSize = 1024
+	}
+	q := &ServiceBusQueue{
+		ID:                       ns.ID + "/queues/" + queueName,
+		Name:                     queueName,
+		NamespaceName:            nsName,
+		MaxSizeInMegabytes:       maxSize,
+		DefaultMessageTimeToLive: "P14D",
+		LockDuration:             "PT30S",
+		Status:                   "Active",
+		CreatedAt:                Timestamp(),
+		Type:                     "Microsoft.ServiceBus/namespaces/queues",
+	}
+	s.data.ServiceBusQueues[nsName][queueName] = q
+	s.persist()
+	return q, nil
+}
+
+// GetServiceBusQueue returns a queue by namespace and name.
+func (s *Store) GetServiceBusQueue(nsName, queueName string) *ServiceBusQueue {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if m := s.data.ServiceBusQueues[nsName]; m != nil {
+		return m[queueName]
+	}
+	return nil
+}
+
+// ListServiceBusQueues lists all queues in a namespace.
+func (s *Store) ListServiceBusQueues(nsName string) []ServiceBusQueue {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []ServiceBusQueue
+	for _, q := range s.data.ServiceBusQueues[nsName] {
+		out = append(out, *q)
+	}
+	return out
+}
+
+// DeleteServiceBusQueue deletes a queue and its messages.
+func (s *Store) DeleteServiceBusQueue(nsName, queueName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.data.ServiceBusQueues[nsName]
+	if m == nil || m[queueName] == nil {
+		return fmt.Errorf("queue '%s' not found in namespace '%s'", queueName, nsName)
+	}
+	delete(m, queueName)
+	if msgs := s.data.ServiceBusMessages[nsName]; msgs != nil {
+		delete(msgs, queueName)
+	}
+	s.persist()
+	return nil
+}
+
+// CreateServiceBusTopic creates a topic in a namespace.
+func (s *Store) CreateServiceBusTopic(nsName, topicName string, maxSize int) (*ServiceBusTopic, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ns, ok := s.data.ServiceBusNamespaces[nsName]
+	if !ok {
+		return nil, fmt.Errorf("namespace '%s' not found", nsName)
+	}
+	if s.data.ServiceBusTopics[nsName] == nil {
+		s.data.ServiceBusTopics[nsName] = make(map[string]*ServiceBusTopic)
+	}
+	if _, exists := s.data.ServiceBusTopics[nsName][topicName]; exists {
+		return nil, fmt.Errorf("topic '%s' already exists in namespace '%s'", topicName, nsName)
+	}
+	if maxSize <= 0 {
+		maxSize = 1024
+	}
+	t := &ServiceBusTopic{
+		ID:                       ns.ID + "/topics/" + topicName,
+		Name:                     topicName,
+		NamespaceName:            nsName,
+		MaxSizeInMegabytes:       maxSize,
+		DefaultMessageTimeToLive: "P14D",
+		Status:                   "Active",
+		CreatedAt:                Timestamp(),
+		Type:                     "Microsoft.ServiceBus/namespaces/topics",
+	}
+	s.data.ServiceBusTopics[nsName][topicName] = t
+	s.persist()
+	return t, nil
+}
+
+// GetServiceBusTopic returns a topic by namespace and name.
+func (s *Store) GetServiceBusTopic(nsName, topicName string) *ServiceBusTopic {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if m := s.data.ServiceBusTopics[nsName]; m != nil {
+		return m[topicName]
+	}
+	return nil
+}
+
+// ListServiceBusTopics lists all topics in a namespace.
+func (s *Store) ListServiceBusTopics(nsName string) []ServiceBusTopic {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []ServiceBusTopic
+	for _, t := range s.data.ServiceBusTopics[nsName] {
+		out = append(out, *t)
+	}
+	return out
+}
+
+// DeleteServiceBusTopic deletes a topic and its subscriptions.
+func (s *Store) DeleteServiceBusTopic(nsName, topicName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.data.ServiceBusTopics[nsName]
+	if m == nil || m[topicName] == nil {
+		return fmt.Errorf("topic '%s' not found in namespace '%s'", topicName, nsName)
+	}
+	delete(m, topicName)
+	if subs := s.data.ServiceBusSubs[nsName]; subs != nil {
+		delete(subs, topicName)
+	}
+	s.persist()
+	return nil
+}
+
+// CreateServiceBusSub creates a subscription on a topic.
+func (s *Store) CreateServiceBusSub(nsName, topicName, subName string, maxDelivery int) (*ServiceBusSubscription, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.ServiceBusTopics[nsName] == nil || s.data.ServiceBusTopics[nsName][topicName] == nil {
+		return nil, fmt.Errorf("topic '%s' not found in namespace '%s'", topicName, nsName)
+	}
+	if s.data.ServiceBusSubs[nsName] == nil {
+		s.data.ServiceBusSubs[nsName] = make(map[string]map[string]*ServiceBusSubscription)
+	}
+	if s.data.ServiceBusSubs[nsName][topicName] == nil {
+		s.data.ServiceBusSubs[nsName][topicName] = make(map[string]*ServiceBusSubscription)
+	}
+	if _, exists := s.data.ServiceBusSubs[nsName][topicName][subName]; exists {
+		return nil, fmt.Errorf("subscription '%s' already exists on topic '%s'", subName, topicName)
+	}
+	if maxDelivery <= 0 {
+		maxDelivery = 10
+	}
+	ns := s.data.ServiceBusNamespaces[nsName]
+	sub := &ServiceBusSubscription{
+		ID:                       ns.ID + "/topics/" + topicName + "/subscriptions/" + subName,
+		Name:                     subName,
+		TopicName:                topicName,
+		NamespaceName:            nsName,
+		MaxDeliveryCount:         maxDelivery,
+		DefaultMessageTimeToLive: "P14D",
+		LockDuration:             "PT30S",
+		Status:                   "Active",
+		CreatedAt:                Timestamp(),
+		Type:                     "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+	}
+	s.data.ServiceBusSubs[nsName][topicName][subName] = sub
+	// Update topic subscription count.
+	s.data.ServiceBusTopics[nsName][topicName].SubscriptionCount++
+	s.persist()
+	return sub, nil
+}
+
+// GetServiceBusSub returns a subscription by namespace, topic, and name.
+func (s *Store) GetServiceBusSub(nsName, topicName, subName string) *ServiceBusSubscription {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if m := s.data.ServiceBusSubs[nsName]; m != nil {
+		if tm := m[topicName]; tm != nil {
+			return tm[subName]
+		}
+	}
+	return nil
+}
+
+// ListServiceBusSubs lists subscriptions on a topic.
+func (s *Store) ListServiceBusSubs(nsName, topicName string) []ServiceBusSubscription {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []ServiceBusSubscription
+	if m := s.data.ServiceBusSubs[nsName]; m != nil {
+		for _, sub := range m[topicName] {
+			out = append(out, *sub)
+		}
+	}
+	return out
+}
+
+// DeleteServiceBusSub deletes a subscription from a topic.
+func (s *Store) DeleteServiceBusSub(nsName, topicName, subName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.data.ServiceBusSubs[nsName]
+	if m == nil || m[topicName] == nil || m[topicName][subName] == nil {
+		return fmt.Errorf("subscription '%s' not found on topic '%s' in namespace '%s'", subName, topicName, nsName)
+	}
+	delete(m[topicName], subName)
+	if t := s.data.ServiceBusTopics[nsName][topicName]; t != nil {
+		t.SubscriptionCount--
+	}
+	s.persist()
+	return nil
+}
+
+// SendMessage sends a message to a queue.
+func (s *Store) SendMessage(nsName, queueName, body, contentType, label string, props map[string]interface{}) (*ServiceBusMessage, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.ServiceBusQueues[nsName] == nil || s.data.ServiceBusQueues[nsName][queueName] == nil {
+		return nil, fmt.Errorf("queue '%s' not found in namespace '%s'", queueName, nsName)
+	}
+	if s.data.ServiceBusMessages[nsName] == nil {
+		s.data.ServiceBusMessages[nsName] = make(map[string][]ServiceBusMessage)
+	}
+	msg := ServiceBusMessage{
+		MessageID:   fmt.Sprintf("msg-%d", len(s.data.ServiceBusMessages[nsName][queueName])+1),
+		Body:        body,
+		ContentType: contentType,
+		Label:       label,
+		Properties:  props,
+		EnqueuedAt:  Timestamp(),
+	}
+	s.data.ServiceBusMessages[nsName][queueName] = append(s.data.ServiceBusMessages[nsName][queueName], msg)
+	s.data.ServiceBusQueues[nsName][queueName].MessageCount++
+	s.persist()
+	return &msg, nil
+}
+
+// ReceiveMessage dequeues the next message from a queue (destructive read).
+func (s *Store) ReceiveMessage(nsName, queueName string) (*ServiceBusMessage, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.ServiceBusQueues[nsName] == nil || s.data.ServiceBusQueues[nsName][queueName] == nil {
+		return nil, fmt.Errorf("queue '%s' not found in namespace '%s'", queueName, nsName)
+	}
+	msgs := s.data.ServiceBusMessages[nsName][queueName]
+	if len(msgs) == 0 {
+		return nil, nil
+	}
+	msg := msgs[0]
+	s.data.ServiceBusMessages[nsName][queueName] = msgs[1:]
+	s.data.ServiceBusQueues[nsName][queueName].MessageCount--
+	s.persist()
+	return &msg, nil
+}
+
+// PeekMessage peeks at the next message without removing it.
+func (s *Store) PeekMessage(nsName, queueName string) (*ServiceBusMessage, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.data.ServiceBusQueues[nsName] == nil || s.data.ServiceBusQueues[nsName][queueName] == nil {
+		return nil, fmt.Errorf("queue '%s' not found in namespace '%s'", queueName, nsName)
+	}
+	msgs := s.data.ServiceBusMessages[nsName][queueName]
+	if len(msgs) == 0 {
+		return nil, nil
+	}
+	m := msgs[0]
+	return &m, nil
+}
+
+// --- Function Apps ---
+
+// CreateFunctionApp creates a new function app.
+func (s *Store) CreateFunctionApp(name, rg, location, runtime, runtimeVersion string, tags map[string]string) (*FunctionApp, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.FunctionApps[name]; exists {
+		return nil, fmt.Errorf("function app '%s' already exists", name)
+	}
+	sub := s.data.Subscriptions[0]
+	if runtime == "" {
+		runtime = "node"
+	}
+	if runtimeVersion == "" {
+		runtimeVersion = "18"
+	}
+	fa := &FunctionApp{
+		ID:                GenerateResourceID(sub.ID, rg, "Microsoft.Web", "sites", name),
+		Name:              name,
+		ResourceGroup:     rg,
+		Location:          location,
+		Kind:              "functionapp",
+		State:             "Running",
+		DefaultHostName:   fmt.Sprintf("%s.azurewebsites.net", name),
+		Runtime:           runtime,
+		RuntimeVersion:    runtimeVersion,
+		Tags:              tags,
+		ProvisioningState: "Succeeded",
+		Type:              "Microsoft.Web/sites",
+	}
+	s.data.FunctionApps[name] = fa
+	s.persist()
+	return fa, nil
+}
+
+// GetFunctionApp returns a function app by name.
+func (s *Store) GetFunctionApp(name string) *FunctionApp {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.FunctionApps[name]
+}
+
+// ListFunctionApps returns all function apps, optionally filtered by RG.
+func (s *Store) ListFunctionApps(rg string) []FunctionApp {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []FunctionApp
+	for _, fa := range s.data.FunctionApps {
+		if rg == "" || fa.ResourceGroup == rg {
+			out = append(out, *fa)
+		}
+	}
+	return out
+}
+
+// DeleteFunctionApp deletes a function app and its functions/invocations.
+func (s *Store) DeleteFunctionApp(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.FunctionApps[name]; !exists {
+		return fmt.Errorf("function app '%s' not found", name)
+	}
+	delete(s.data.FunctionApps, name)
+	delete(s.data.Functions, name)
+	delete(s.data.FunctionInvocations, name)
+	s.persist()
+	return nil
+}
+
+// CreateFunction creates a function in a function app.
+func (s *Store) CreateFunction(appName, funcName, triggerType, language string, bindings []FuncBinding) (*Function, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	fa, ok := s.data.FunctionApps[appName]
+	if !ok {
+		return nil, fmt.Errorf("function app '%s' not found", appName)
+	}
+	if s.data.Functions[appName] == nil {
+		s.data.Functions[appName] = make(map[string]*Function)
+	}
+	if _, exists := s.data.Functions[appName][funcName]; exists {
+		return nil, fmt.Errorf("function '%s' already exists in app '%s'", funcName, appName)
+	}
+	if triggerType == "" {
+		triggerType = "httpTrigger"
+	}
+	if language == "" {
+		language = fa.Runtime
+	}
+	f := &Function{
+		ID:          fa.ID + "/functions/" + funcName,
+		Name:        funcName,
+		FunctionApp: appName,
+		TriggerType: triggerType,
+		Language:    language,
+		Bindings:    bindings,
+		InvokeURL:   fmt.Sprintf("https://%s/api/%s", fa.DefaultHostName, funcName),
+	}
+	s.data.Functions[appName][funcName] = f
+	s.persist()
+	return f, nil
+}
+
+// GetFunction returns a function by app and name.
+func (s *Store) GetFunction(appName, funcName string) *Function {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if m := s.data.Functions[appName]; m != nil {
+		return m[funcName]
+	}
+	return nil
+}
+
+// ListFunctions lists functions in a function app.
+func (s *Store) ListFunctions(appName string) []Function {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []Function
+	for _, f := range s.data.Functions[appName] {
+		out = append(out, *f)
+	}
+	return out
+}
+
+// DeleteFunction deletes a function from an app.
+func (s *Store) DeleteFunction(appName, funcName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.data.Functions[appName]
+	if m == nil || m[funcName] == nil {
+		return fmt.Errorf("function '%s' not found in app '%s'", funcName, appName)
+	}
+	delete(m, funcName)
+	s.persist()
+	return nil
+}
+
+// InvokeFunction simulates invoking a function and records the result.
+func (s *Store) InvokeFunction(appName, funcName, input string) (*FunctionInvocation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.data.Functions[appName] == nil || s.data.Functions[appName][funcName] == nil {
+		return nil, fmt.Errorf("function '%s' not found in app '%s'", funcName, appName)
+	}
+	f := s.data.Functions[appName][funcName]
+	if f.IsDisabled {
+		return nil, fmt.Errorf("function '%s' is disabled", funcName)
+	}
+	now := Timestamp()
+	inv := FunctionInvocation{
+		ID:           fmt.Sprintf("inv-%d", len(s.data.FunctionInvocations[appName])+1),
+		FunctionName: funcName,
+		FunctionApp:  appName,
+		Status:       "Succeeded",
+		StartTime:    now,
+		EndTime:      now,
+		DurationMs:   42, // simulated
+		Input:        input,
+		Output:       fmt.Sprintf("{\"status\":\"ok\",\"function\":\"%s\",\"echo\":%s}", funcName, input),
+	}
+	s.data.FunctionInvocations[appName] = append(s.data.FunctionInvocations[appName], inv)
+	s.persist()
+	return &inv, nil
+}
+
+// ListInvocations returns function invocation history for an app.
+func (s *Store) ListInvocations(appName string) []FunctionInvocation {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.data.FunctionInvocations[appName]
 }

@@ -21,6 +21,8 @@
   <img src="https://img.shields.io/badge/networking-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Networking Simulated">
   <img src="https://img.shields.io/badge/VM-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="VM Simulated">
   <img src="https://img.shields.io/badge/drift--detection-enabled-ff6f00?style=flat-square&logo=microsoftazure" alt="Drift Detection">
+  <img src="https://img.shields.io/badge/servicebus-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Service Bus Simulated">
+  <img src="https://img.shields.io/badge/functions-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Functions Simulated">
 </p>
 
 ---
@@ -226,6 +228,21 @@ The Azure Cloud Simulator implements the following `az` commands locally:
 | `az vm stop -n NAME -g RG` | Stop VM → Stopped |
 | `az vm restart -n NAME -g RG` | Restart VM → Running |
 | `az vm deallocate -n NAME -g RG` | Deallocate VM (no billing) |
+| **Service Bus** | |
+| `az servicebus namespace create -n NAME -g RG` | Create namespace |
+| `az servicebus namespace show/list/delete` | Namespace CRUD |
+| `az servicebus queue create -n NAME --namespace-name NS` | Create queue |
+| `az servicebus queue show/list/delete` | Queue CRUD |
+| `az servicebus topic create -n NAME --namespace-name NS` | Create topic |
+| `az servicebus topic subscription create -n NAME --namespace-name NS --topic-name T` | Create subscription |
+| `az servicebus queue message send --namespace-name NS --queue-name Q --body MSG` | Send message |
+| `az servicebus queue message receive/peek` | Receive/peek messages |
+| **Function Apps** | |
+| `az functionapp create -n NAME -g RG --runtime python` | Create function app |
+| `az functionapp show/list/delete` | Function app CRUD |
+| `az functionapp function create -n NAME --function-app-name APP` | Create function |
+| `az functionapp function invoke -n NAME --function-app-name APP --input JSON` | Invoke function |
+| `az functionapp function invocations --function-app-name APP` | Invocation history |
 
 ### 🔍 Drift Detection
 

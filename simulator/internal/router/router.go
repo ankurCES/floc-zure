@@ -40,7 +40,13 @@ func (r *Router) Dispatch(args []string) int {
 	// Strip global flags that appear before the command: --output, -o, --query
 	cleaned := stripGlobalFlags(args)
 
-	// Try longest prefix first (4 words, then 3, then 2, then 1).
+	// Try longest prefix first (5 words, then 4, then 3, then 2, then 1).
+	if len(cleaned) >= 5 {
+		key := cleaned[0] + " " + cleaned[1] + " " + cleaned[2] + " " + cleaned[3] + " " + cleaned[4]
+		if fn, ok := r.routes[key]; ok {
+			return fn(cleaned[5:])
+		}
+	}
 	if len(cleaned) >= 4 {
 		key := cleaned[0] + " " + cleaned[1] + " " + cleaned[2] + " " + cleaned[3]
 		if fn, ok := r.routes[key]; ok {
@@ -222,5 +228,36 @@ Commands:
   vm start                   Start a virtual machine
   vm stop                    Stop a virtual machine
   vm restart                 Restart a virtual machine
-  vm deallocate              Deallocate a virtual machine`)
+  vm deallocate              Deallocate a virtual machine
+
+  servicebus namespace create       Create a Service Bus namespace
+  servicebus namespace show         Show a namespace
+  servicebus namespace list         List namespaces
+  servicebus namespace delete       Delete a namespace
+  servicebus queue create           Create a queue
+  servicebus queue show             Show a queue
+  servicebus queue list             List queues
+  servicebus queue delete           Delete a queue
+  servicebus topic create           Create a topic
+  servicebus topic show             Show a topic
+  servicebus topic list             List topics
+  servicebus topic delete           Delete a topic
+  servicebus topic subscription create  Create a topic subscription
+  servicebus topic subscription show    Show a subscription
+  servicebus topic subscription list    List subscriptions
+  servicebus topic subscription delete  Delete a subscription
+  servicebus queue message send     Send a message to a queue
+  servicebus queue message receive  Receive (dequeue) a message
+  servicebus queue message peek     Peek at next message
+
+  functionapp create                Create a function app
+  functionapp show                  Show a function app
+  functionapp list                  List function apps
+  functionapp delete                Delete a function app
+  functionapp function create       Create a function
+  functionapp function show         Show a function
+  functionapp function list         List functions in an app
+  functionapp function delete       Delete a function
+  functionapp function invoke       Invoke a function
+  functionapp function invocations  List invocation history`)
 }
