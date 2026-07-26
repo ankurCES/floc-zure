@@ -8,11 +8,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ManagerImpl is the Viper-backed implementation of config.Manager.
 type ManagerImpl struct {
 	v   *viper.Viper
 	cfg *models.Config
 }
 
+// NewManager creates a ManagerImpl that reads ~/.azfloci.yaml and AZFLOCI_ env vars.
 func NewManager() *ManagerImpl {
 	v := viper.New()
 	v.SetConfigName(".azfloci")

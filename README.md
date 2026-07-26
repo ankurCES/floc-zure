@@ -39,14 +39,22 @@ azfloci config set defaults.location westus2
 ```
 
 ## Command Reference
-| Command | Description |
-|---|---|
-| `azfloci version` | Print version |
-| `azfloci auth status` | Show current Azure account |
-| `azfloci group create/list/delete` | Resource group CRUD |
-| `azfloci resource list/show/delete/tag` | Resource operations |
-| `azfloci workflow run/validate` | Execute YAML workflows |
-| `azfloci config set/get/list/init` | Manage configuration |
+| Command | Description | Docs |
+|---|---|---|
+| `azfloci version` | Print version | [version](docs/commands/version.md) |
+| `azfloci auth status` | Show current Azure account | [auth-status](docs/commands/auth-status.md) |
+| `azfloci group create/list/delete` | Resource group CRUD | [group](docs/commands/group.md) |
+| `azfloci resource list/show/delete/tag` | Resource operations | [resource](docs/commands/resource.md) |
+| `azfloci workflow run/validate` | Execute YAML workflows | [workflow](docs/commands/workflow.md) |
+| `azfloci config set/get/list/init` | Manage configuration | [config](docs/commands/config.md) |
+
+## Documentation
+- **[Architecture](docs/architecture.md)** — component diagram, data flow, error handling, extension points
+- **[Getting Started](docs/guides/getting-started.md)** — installation to first workflow
+- **[Azure Setup](docs/guides/azure-setup.md)** — permissions, service principals, CI/CD
+- **[Migration from floci](docs/guides/migration-from-floci.md)** — differences and mapping
+- **[Development Guide](docs/development.md)** — dev setup, tests, adding commands, conventions
+- **[Changelog](CHANGELOG.md)** — release history
 
 ## Development
 ```bash

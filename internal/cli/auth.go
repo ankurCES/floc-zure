@@ -8,11 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// authCmd is the parent command for Azure authentication subcommands.
 var authCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Azure authentication commands",
 }
 
+// authStatusCmd shows current Azure account and authentication status.
 var authStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current Azure account and auth status",

@@ -20,7 +20,7 @@ func TestVersionOutput(t *testing.T) {
 func TestHelpOutput(t *testing.T) {
 	cli := helpers.NewCLIRunner(t)
 	res := cli.MustRun(t, "--help")
-	helpers.AssertStdoutContains(t, res, "Azure resource orchestration CLI")
+	helpers.AssertStdoutContains(t, res, "azfloci wraps the Azure CLI")
 }
 
 // TestUnknownCommand verifies unknown subcommands produce a non-zero exit.

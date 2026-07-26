@@ -6,8 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version is set at build time via ldflags.
 var Version = "dev"
 
+// rootCmd is the top-level Cobra command for azfloci.
 var rootCmd = &cobra.Command{
 	Use:   "azfloci",
 	Short: "Azure resource orchestration CLI",
@@ -19,6 +21,7 @@ func init() {
 	rootCmd.AddCommand(authCmd)
 }
 
+// versionCmd prints the azfloci version string.
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
