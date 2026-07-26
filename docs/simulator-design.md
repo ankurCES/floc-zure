@@ -171,9 +171,56 @@ Creating → Running ↔ Stopped → Deallocated
   "nsgs": {},
   "nsg_rules": {},
   "public_ips": {},
-  "vms": {}
+  "vms": {},
+  "servicebus_namespaces": {},
+  "servicebus_queues": {},
+  "servicebus_topics": {},
+  "servicebus_subscriptions": {},
+  "servicebus_messages": {},
+  "function_apps": {},
+  "functions": {},
+  "function_invocations": {}
 }
 ```
+
+### Service Bus (Namespace, Queue, Topic, Subscription, Message)
+
+| az command | Handler | Notes |
+|---|---|---|
+| `servicebus namespace create -n N -g RG -l LOC [--sku Basic]` | servicebus.NamespaceCreate | SKU flag (Basic/Standard/Premium) |
+| `servicebus namespace show -n N -g RG` | servicebus.NamespaceShow | |
+| `servicebus namespace list [-g RG]` | servicebus.NamespaceList | Filter by RG |
+| `servicebus namespace delete -n N -g RG` | servicebus.NamespaceDelete | Cascade deletes queues/topics/subs/messages |
+| `servicebus queue create -n N --namespace-name NS -g RG` | servicebus.QueueCreate | |
+| `servicebus queue show -n N --namespace-name NS -g RG` | servicebus.QueueShow | |
+| `servicebus queue list --namespace-name NS -g RG` | servicebus.QueueList | |
+| `servicebus queue delete -n N --namespace-name NS -g RG` | servicebus.QueueDelete | |
+| `servicebus topic create -n N --namespace-name NS -g RG` | servicebus.TopicCreate | |
+| `servicebus topic show -n N --namespace-name NS -g RG` | servicebus.TopicShow | |
+| `servicebus topic list --namespace-name NS -g RG` | servicebus.TopicList | |
+| `servicebus topic delete -n N --namespace-name NS -g RG` | servicebus.TopicDelete | Cascade deletes subscriptions |
+| `servicebus topic subscription create -n N --topic-name T --namespace-name NS -g RG` | servicebus.SubscriptionCreate | 5-word route |
+| `servicebus topic subscription show -n N --topic-name T --namespace-name NS -g RG` | servicebus.SubscriptionShow | |
+| `servicebus topic subscription list --topic-name T --namespace-name NS -g RG` | servicebus.SubscriptionList | |
+| `servicebus topic subscription delete -n N --topic-name T --namespace-name NS -g RG` | servicebus.SubscriptionDelete | |
+| `servicebus queue message send --namespace-name NS --queue-name Q -g RG --body MSG` | servicebus.MessageSend | 5-word route |
+| `servicebus queue message receive --namespace-name NS --queue-name Q -g RG` | servicebus.MessageReceive | Dequeues (destructive read) |
+| `servicebus queue message peek --namespace-name NS --queue-name Q -g RG` | servicebus.MessagePeek | Non-destructive read |
+
+### Function Apps (App, Function, Invoke)
+
+| az command | Handler | Notes |
+|---|---|---|
+| `functionapp create -n N -g RG -l LOC --runtime RUNTIME` | functionapp.Create | Runtime + version flags |
+| `functionapp show -n N -g RG` | functionapp.Show | |
+| `functionapp list [-g RG]` | functionapp.List | Filter by RG |
+| `functionapp delete -n N -g RG` | functionapp.Delete | Cascade deletes functions + invocations |
+| `functionapp function create --function-app-name APP -g RG -n N --trigger-type TYPE` | functionapp.FunctionCreate | Bindings via trigger-type |
+| `functionapp function show --function-app-name APP -g RG -n N` | functionapp.FunctionShow | |
+| `functionapp function list --function-app-name APP -g RG` | functionapp.FunctionList | |
+| `functionapp function delete --function-app-name APP -g RG -n N` | functionapp.FunctionDelete | |
+| `functionapp function invoke --function-app-name APP -g RG -n N [--body JSON]` | functionapp.FunctionInvoke | Simulated echo response |
+| `functionapp function invocations --function-app-name APP -g RG -n N` | functionapp.FunctionInvocations | Returns invocation history |
 
 ## Integration
 

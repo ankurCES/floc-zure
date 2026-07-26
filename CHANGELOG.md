@@ -3,6 +3,14 @@
 All notable changes to azfloci are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] — 2026-07-27
+
+### Added
+- **Service Bus Simulation**: Full CRUD for namespaces, queues, topics, and topic subscriptions (`az servicebus namespace/queue/topic create/show/list/delete`, `az servicebus topic subscription create/show/list/delete`). In-memory message queue with `send/receive/peek` commands. Cascade deletes propagate from namespace → queues/topics/subscriptions/messages.
+- **Function App Simulation**: Full CRUD for function apps and functions (`az functionapp create/show/list/delete`, `az functionapp function create/show/list/delete`). Simulated invocation with `invoke` command and invocation history via `invocations`. Cascade deletes propagate from app → functions/invocations.
+- **5-word router dispatch**: Supports commands like `servicebus topic subscription create` and `servicebus queue message send`.
+- **12 new store tests** (8 Service Bus + 5 Function App) and **7 new handler tests** (4 Service Bus + 3 Function App).
+
 ## [0.4.0] — 2026-07-27
 
 ### Added
