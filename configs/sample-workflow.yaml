@@ -1,0 +1,39 @@
+name: sample-infra-setup
+description: Create a resource group, storage account, and web app
+steps:
+  - name: create-rg
+    command: group create
+    args:
+      name: rg-demo
+      location: eastus
+    on_error: abort
+
+  - name: create-storage
+    command: storage account create
+    args:
+      name: sademo001
+      resource-group: rg-demo
+      sku: Standard_LRS
+    depends_on:
+      - create-rg
+    on_error: retry
+    max_retries: 2
+
+  - name: create-webapp
+    command: webapp create
+    args:
+      name: webapp-demo
+      resource-group: rg-demo
+      plan: asp-demo
+    depends_on:
+      - create-rg
+    on_error: continue
+
+  - name: configure-webapp
+    command: webapp config set
+    args:
+      name: webapp-demo
+      resource-group: rg-demo
+    depends_on:
+      - create-webapp
+      - create-storage
