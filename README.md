@@ -18,6 +18,9 @@
   <img src="https://img.shields.io/badge/subscription-not%20required-success?style=flat-square" alt="No Subscription Required">
   <img src="https://img.shields.io/badge/storage-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Storage Simulated">
   <img src="https://img.shields.io/badge/keyvault-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Key Vault Simulated">
+  <img src="https://img.shields.io/badge/networking-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="Networking Simulated">
+  <img src="https://img.shields.io/badge/VM-simulated-blueviolet?style=flat-square&logo=microsoftazure" alt="VM Simulated">
+  <img src="https://img.shields.io/badge/drift--detection-enabled-ff6f00?style=flat-square&logo=microsoftazure" alt="Drift Detection">
 </p>
 
 ---
@@ -107,9 +110,11 @@ azfloci config set defaults.location eastus
 │  │  │ account  │ │ storage account  │   │                       │
 │  │  │ group    │ │ storage container│   │                       │
 │  │  │ resource │ │ storage blob     │   │                       │
-│  │  │          │ │ keyvault         │   │                       │
-│  │  │          │ │ keyvault secret  │   │                       │
-│  │  │          │ │ keyvault key     │   │                       │
+│  │  │          │ │ keyvault/*       │   │                       │
+│  │  │          │ │ network vnet/*   │   │                       │
+│  │  │          │ │ network nsg/*    │   │                       │
+│  │  │          │ │ network public-ip│   │                       │
+│  │  │          │ │ vm *             │   │                       │
 │  │  └──────────┘ └──────────────────┘   │                       │
 │  │              │                       │                       │
 │  │  ┌───────────▼───────────────────┐   │                       │
@@ -185,6 +190,64 @@ The Azure Cloud Simulator implements the following `az` commands locally:
 | `az keyvault key show -n NAME --vault-name V` | Show key details |
 | `az keyvault key list --vault-name V` | List keys |
 | `az keyvault key delete -n NAME --vault-name V` | Delete a key |
+
+### 🌐 Networking (VNet, NSG, Public IP)
+
+| Command | Description |
+|---|---|
+| `az network vnet create -n NAME -g RG -l LOC --address-prefixes CIDR` | Create virtual network |
+| `az network vnet show -n NAME -g RG` | Show VNet details |
+| `az network vnet list [-g RG]` | List VNets |
+| `az network vnet delete -n NAME -g RG` | Delete VNet (cascades subnets) |
+| `az network vnet subnet create -n NAME --vnet-name V -g RG --address-prefixes CIDR` | Create subnet |
+| `az network vnet subnet show -n NAME --vnet-name V -g RG` | Show subnet |
+| `az network vnet subnet list --vnet-name V -g RG` | List subnets |
+| `az network vnet subnet delete -n NAME --vnet-name V -g RG` | Delete subnet |
+| `az network nsg create -n NAME -g RG -l LOC` | Create network security group |
+| `az network nsg show -n NAME -g RG` | Show NSG |
+| `az network nsg list [-g RG]` | List NSGs |
+| `az network nsg delete -n NAME -g RG` | Delete NSG (cascades rules) |
+| `az network nsg rule create -n NAME --nsg-name NSG -g RG --priority N --access Allow/Deny --protocol Tcp --direction Inbound --source-address-prefixes '*' --destination-port-ranges 80` | Create NSG rule |
+| `az network nsg rule delete -n NAME --nsg-name NSG -g RG` | Delete NSG rule |
+| `az network public-ip create -n NAME -g RG -l LOC` | Create public IP |
+| `az network public-ip show -n NAME -g RG` | Show public IP |
+| `az network public-ip list [-g RG]` | List public IPs |
+| `az network public-ip delete -n NAME -g RG` | Delete public IP |
+
+### 🖥️ Virtual Machines
+
+| Command | Description |
+|---|---|
+| `az vm create -n NAME -g RG -l LOC --image IMAGE --size SIZE` | Create VM (starts in Running) |
+| `az vm show -n NAME -g RG` | Show VM details + power state |
+| `az vm list [-g RG]` | List VMs |
+| `az vm delete -n NAME -g RG --yes` | Delete VM |
+| `az vm start -n NAME -g RG` | Start VM → Running |
+| `az vm stop -n NAME -g RG` | Stop VM → Stopped |
+| `az vm restart -n NAME -g RG` | Restart VM → Running |
+| `az vm deallocate -n NAME -g RG` | Deallocate VM (no billing) |
+
+### 🔍 Drift Detection
+
+azfloci includes a built-in drift detection engine that compares Azure resource state over time:
+
+```bash
+# Capture a baseline snapshot of all simulated resources
+azfloci drift snapshot --state-file ~/.azfloci-sim/state.json --output baseline.json
+
+# ... make changes (create/delete/modify resources) ...
+
+# Compare current state against baseline
+azfloci drift compare --before baseline.json --after current.json
+
+# Generate a human-readable drift report
+azfloci drift report --state-file ~/.azfloci-sim/state.json --baseline baseline.json
+```
+
+**Drift categories:**
+- ➕ **Added** — resources present now but not in baseline
+- ➖ **Removed** — resources in baseline but deleted
+- 🔄 **Modified** — resources with changed properties (field-level diff)
 
 ---
 
@@ -286,9 +349,10 @@ floc-zure/
 ├── simulator/
 │   ├── cmd/az/               # Simulator binary (fake az CLI)
 │   └── internal/
-│       ├── handlers/         # Command handlers (account, group, storage, keyvault)
-│       ├── router/           # Arg-based command router
+│       ├── handlers/         # Command handlers (account, group, storage, keyvault, network, vm)
+│       ├── router/           # Arg-based command router (up to 4-word prefix)
 │       └── state/            # JSON-backed state store
+├── internal/drift/               # Drift detection engine (snapshot, compare, report)
 ├── configs/                  # Example config files
 ├── docs/                     # Architecture, guides, command reference
 ├── tests/e2e/                # End-to-end test suite
@@ -309,9 +373,9 @@ floc-zure/
 - [x] **Phase 6** — Storage Account simulation (accounts, containers, blobs)
 - [x] **Phase 7** — Key Vault simulation (vaults, secrets, keys)
 - [x] **Phase 8** — CI/CD pipeline (GitHub Actions matrix)
-- [ ] **Phase 9** — Networking simulation (VNet, NSG, public IP)
-- [ ] **Phase 10** — VM simulation (with state machine lifecycle)
-- [ ] **Phase 11** — Drift detection (snapshot → compare → report)
+- [x] **Phase 9** — Networking simulation (VNet, Subnet, NSG, NSG Rules, Public IP)
+- [x] **Phase 10** — VM simulation (lifecycle state machine: Running ↔ Stopped ↔ Deallocated)
+- [x] **Phase 11** — Drift detection (snapshot → compare → report)
 - [ ] **Phase 12** — ARM/Bicep template deployment
 - [ ] **Phase 13** — Docker Compose dev environment
 

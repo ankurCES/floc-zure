@@ -3,8 +3,8 @@
 All notable changes to azfloci are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.2.0] — 2025-07-26
-## [0.3.0] — 2025-07-27
+## [0.3.0] — 2026-07-27
+## [0.2.0] — 2026-07-26
 
 ### Added
 - **Networking Simulation**: VNet, Subnet, NSG, NSG Rule, Public IP — full CRUD with CIDR prefix support, cascade operations, 4-word command routing.
@@ -30,7 +30,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **README.md**: Complete rewrite with SVG logo, 10 badge pills, full simulator command reference, updated architecture diagram, workflow examples, and documentation links.
 - **ROADMAP.md**: Phases 6–8 marked complete.
 
-## [0.1.0] — 2025-07-25
+## [0.1.0] — 2026-07-25
 
 ### Added
 - **CLI framework**: Cobra-based command tree with `version`, `auth status` commands.

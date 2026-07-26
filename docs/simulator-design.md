@@ -91,6 +91,49 @@ deterministic end-to-end testing of azfloci.
 | `keyvault key list --vault-name V` | keyvault.KeyList | |
 | `keyvault key delete -n N --vault-name V` | keyvault.KeyDelete | |
 
+### Networking (VNet, Subnet, NSG, Public IP)
+
+| az command | Handler | Notes |
+|---|---|---|
+| `network vnet create -n N -g RG -l LOC --address-prefixes CIDR` | network.VNetCreate | Persists VNet with address space |
+| `network vnet show -n N -g RG` | network.VNetShow | Lookup by name+RG |
+| `network vnet list [-g RG]` | network.VNetList | Filter by RG |
+| `network vnet delete -n N -g RG` | network.VNetDelete | Cascades subnets |
+| `network vnet subnet create -n N --vnet-name V -g RG --address-prefixes CIDR` | network.SubnetCreate | 4-word route |
+| `network vnet subnet show -n N --vnet-name V -g RG` | network.SubnetShow | |
+| `network vnet subnet list --vnet-name V -g RG` | network.SubnetList | |
+| `network vnet subnet delete -n N --vnet-name V -g RG` | network.SubnetDelete | |
+| `network nsg create -n N -g RG -l LOC` | network.NSGCreate | |
+| `network nsg show -n N -g RG` | network.NSGShow | |
+| `network nsg list [-g RG]` | network.NSGList | Filter by RG |
+| `network nsg delete -n N -g RG` | network.NSGDelete | Cascades rules |
+| `network nsg rule create -n N --nsg-name NSG -g RG --priority P --access A --protocol P --direction D` | network.NSGRuleCreate | 4-word route |
+| `network nsg rule delete -n N --nsg-name NSG -g RG` | network.NSGRuleDelete | |
+| `network public-ip create -n N -g RG -l LOC` | network.PublicIPCreate | Auto-assigns IP |
+| `network public-ip show -n N -g RG` | network.PublicIPShow | |
+| `network public-ip list [-g RG]` | network.PublicIPList | Filter by RG |
+| `network public-ip delete -n N -g RG` | network.PublicIPDelete | |
+
+### Virtual Machines
+
+| az command | Handler | Notes |
+|---|---|---|
+| `vm create -n N -g RG -l LOC --image IMG --size SZ` | vm.Create | Initial state: Running |
+| `vm show -n N -g RG` | vm.Show | Includes powerState |
+| `vm list [-g RG]` | vm.List | Filter by RG |
+| `vm delete -n N -g RG --yes` | vm.Delete | |
+| `vm start -n N -g RG` | vm.Start | → Running |
+| `vm stop -n N -g RG` | vm.Stop | → Stopped |
+| `vm restart -n N -g RG` | vm.Restart | → Running |
+| `vm deallocate -n N -g RG` | vm.Deallocate | → Deallocated |
+
+**VM State Machine:**
+```
+Creating → Running ↔ Stopped → Deallocated
+                  ↔ Deallocated
+       restart ──→ Running
+```
+
 ## State Store
 
 - **Location**: `$AZFLOCI_SIM_STATE` env var, or `~/.azfloci-sim/state.json`
@@ -122,7 +165,13 @@ deterministic end-to-end testing of azfloci.
   "blobs": {},
   "key_vaults": {},
   "secrets": {},
-  "keys": {}
+  "keys": {},
+  "vnets": {},
+  "subnets": {},
+  "nsgs": {},
+  "nsg_rules": {},
+  "public_ips": {},
+  "vms": {}
 }
 ```
 
