@@ -150,15 +150,43 @@ func printHelp() {
 	fmt.Println(`azure-cli-simulator — drop-in az replacement for azfloci testing
 
 Commands:
-  account show          Show active subscription
-  account set           Switch subscription
-  account list          List all subscriptions
-  group create          Create a resource group
-  group show            Show a resource group
-  group list            List resource groups
-  group delete          Delete a resource group
-  resource list         List resources
-  resource show         Show a resource
-  resource delete       Delete a resource
-  resource tag          Tag a resource`)
+  account show               Show active subscription
+  account set                Switch subscription
+  account list               List all subscriptions
+
+  group create               Create a resource group
+  group show                 Show a resource group
+  group list                 List resource groups
+  group delete               Delete a resource group
+
+  resource list              List resources
+  resource show              Show a resource
+  resource delete            Delete a resource
+  resource tag               Tag a resource
+
+  storage account create     Create a storage account
+  storage account show       Show a storage account
+  storage account list       List storage accounts
+  storage account delete     Delete a storage account
+  storage container create   Create a blob container
+  storage container show     Show a blob container
+  storage container list     List blob containers
+  storage container delete   Delete a blob container
+  storage blob upload        Upload a blob
+  storage blob show          Show blob properties
+  storage blob list          List blobs
+  storage blob delete        Delete a blob
+
+  keyvault create            Create a key vault
+  keyvault show              Show a key vault
+  keyvault list              List key vaults
+  keyvault delete            Delete a key vault
+  keyvault secret set        Set a secret
+  keyvault secret show       Show a secret
+  keyvault secret list       List secrets
+  keyvault secret delete     Delete a secret
+  keyvault key create        Create a key
+  keyvault key show          Show a key
+  keyvault key list          List keys
+  keyvault key delete        Delete a key`)
 }

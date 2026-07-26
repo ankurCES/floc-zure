@@ -25,6 +25,8 @@ deterministic end-to-end testing of azfloci.
 │  │  │ (args)  │  │  account show/set    │   │    │
 │  │  └─────────┘  │  group CRUD          │   │    │
 │  │               │  resource CRUD/tag   │   │    │
+│  │               │  storage acct/ctr/bl │   │    │
+│  │               │  keyvault/secret/key │   │    │
 │  │               └──────────┬───────────┘   │    │
 │  │                          │               │    │
 │  │               ┌──────────▼───────────┐   │    │
@@ -39,6 +41,8 @@ deterministic end-to-end testing of azfloci.
 
 ## Commands Simulated
 
+### Account & Resource Management
+
 | az command | Handler | Notes |
 |---|---|---|
 | `account show` | account.Show | Returns active subscription |
@@ -52,6 +56,40 @@ deterministic end-to-end testing of azfloci.
 | `resource show --ids ID` | resource.Show | Lookup by ARM ID |
 | `resource delete --ids ID --yes` | resource.Delete | Removes from state |
 | `resource tag --ids ID --tags k=v` | resource.Tag | Merges tags |
+
+### Storage Accounts, Containers & Blobs
+
+| az command | Handler | Notes |
+|---|---|---|
+| `storage account create -n N -g RG -l LOC` | storage.AccountCreate | SKU, kind flags |
+| `storage account show -n N` | storage.AccountShow | Lookup by name |
+| `storage account list [-g RG]` | storage.AccountList | Filter by RG |
+| `storage account delete -n N` | storage.AccountDelete | Cascade deletes containers + blobs |
+| `storage container create -n N --account-name A` | storage.ContainerCreate | |
+| `storage container show -n N --account-name A` | storage.ContainerShow | |
+| `storage container list --account-name A` | storage.ContainerList | |
+| `storage container delete -n N --account-name A` | storage.ContainerDelete | Cascade deletes blobs |
+| `storage blob upload -n N --account-name A -c C` | storage.BlobUpload | Content-type, source flags |
+| `storage blob show -n N --account-name A -c C` | storage.BlobShow | |
+| `storage blob list --account-name A -c C` | storage.BlobList | |
+| `storage blob delete -n N --account-name A -c C` | storage.BlobDelete | |
+
+### Key Vault, Secrets & Keys
+
+| az command | Handler | Notes |
+|---|---|---|
+| `keyvault create -n N -g RG -l LOC` | keyvault.Create | SKU flag |
+| `keyvault show -n N` | keyvault.Show | |
+| `keyvault list [-g RG]` | keyvault.List | Filter by RG |
+| `keyvault delete -n N` | keyvault.Delete | Cascade deletes secrets + keys |
+| `keyvault secret set -n N --vault-name V --value VAL` | keyvault.SecretSet | Auto-versioned |
+| `keyvault secret show -n N --vault-name V` | keyvault.SecretShow | Returns latest version |
+| `keyvault secret list --vault-name V` | keyvault.SecretList | |
+| `keyvault secret delete -n N --vault-name V` | keyvault.SecretDelete | |
+| `keyvault key create -n N --vault-name V [--kty RSA]` | keyvault.KeyCreate | RSA/EC, size flag |
+| `keyvault key show -n N --vault-name V` | keyvault.KeyShow | |
+| `keyvault key list --vault-name V` | keyvault.KeyList | |
+| `keyvault key delete -n N --vault-name V` | keyvault.KeyDelete | |
 
 ## State Store
 
@@ -78,7 +116,13 @@ deterministic end-to-end testing of azfloci.
     }
   ],
   "resource_groups": {},
-  "resources": {}
+  "resources": {},
+  "storage_accounts": {},
+  "containers": {},
+  "blobs": {},
+  "key_vaults": {},
+  "secrets": {},
+  "keys": {}
 }
 ```
 
