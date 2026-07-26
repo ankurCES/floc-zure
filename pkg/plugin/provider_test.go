@@ -190,7 +190,7 @@ func TestBuiltinProviders(t *testing.T) {
 	}
 
 	// Compute should be registered
-	p, ok = reg.GetProvider("Microsoft.Compute/virtualMachines")
+	_, ok = reg.GetProvider("Microsoft.Compute/virtualMachines")
 	if !ok {
 		t.Fatal("compute provider not registered")
 	}

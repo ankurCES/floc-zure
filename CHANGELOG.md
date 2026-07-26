@@ -3,6 +3,12 @@
 All notable changes to azfloci are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1] — 2026-07-27
+
+### Fixed
+- **golangci-lint clean**: Zero lint errors across all packages. Added `.golangci.yml` config (errcheck, govet, staticcheck, ineffassign, unused; test files excluded from errcheck).
+- **errcheck fixes**: `internal/drift/snapshot.go` — checked `json.Unmarshal` return values. `simulator/internal/handlers/keyvault.go` — checked `fmt.Sscanf` return. `simulator/internal/state/store.go` — all 15 bare `s.persist()` calls now use `_ = s.persist()`. `pkg/plugin/provider_test.go` — fixed unused variable (staticcheck SA4006).
+
 ## [0.5.0] — 2026-07-27
 
 ### Added

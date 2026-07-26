@@ -244,7 +244,7 @@ func keyCreate(store *state.Store) router.HandlerFunc {
 		sizeStr, _ := router.ParseFlag(args, "--size")
 		keySize := 2048
 		if sizeStr != "" {
-			fmt.Sscanf(sizeStr, "%d", &keySize)
+			_, _ = fmt.Sscanf(sizeStr, "%d", &keySize)
 		}
 		tags := router.ParseTags(args)
 		if len(tags) == 0 {

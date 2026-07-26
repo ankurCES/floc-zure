@@ -43,6 +43,11 @@
 | ⚙️ **Config Management** | Persistent config with defaults for location, subscription, output format |
 | 🧪 **No Subscription Needed** | Simulator auto-seeds a test subscription — zero Azure setup required |
 | 🏗️ **CI Pipeline** | GitHub Actions matrix build (Go 1.22/1.23 × ubuntu/macos), lint, test, sim-test |
+| ✅ **Lint-Clean** | Zero golangci-lint errors across all packages (errcheck, govet, staticcheck, unused) |
+| 🧩 **Plugin Architecture** | `ResourceProvider` interface with built-in Storage + Compute providers |
+| 💰 **Cost Estimation** | `azfloci cost estimate` with pricing for 6 resource types |
+| 📐 **ARM Templates** | `azfloci deploy create/validate` — parse ARM JSON → simulated resources |
+| 🐳 **Docker Ready** | Multi-stage Dockerfile, docker-compose.yml for one-command dev setup |
 
 ---
 

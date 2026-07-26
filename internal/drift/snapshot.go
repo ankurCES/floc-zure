@@ -97,7 +97,9 @@ func extractMap(raw map[string]json.RawMessage, key, resType string, snap *Snaps
 			Location string            `json:"location"`
 			Tags     map[string]string `json:"tags"`
 		}
-		json.Unmarshal(v, &entry)
+		if err := json.Unmarshal(v, &entry); err != nil {
+			continue
+		}
 		snap.Resources = append(snap.Resources, ResourceEntry{
 			ID:         entry.ID,
 			Name:       entry.Name,
@@ -214,8 +216,8 @@ func diffEntry(b, a ResourceEntry) []FieldDiff {
 
 func diffJSON(b, a json.RawMessage, prefix string) []FieldDiff {
 	var bm, am map[string]interface{}
-	json.Unmarshal(b, &bm)
-	json.Unmarshal(a, &am)
+	_ = json.Unmarshal(b, &bm)
+	_ = json.Unmarshal(a, &am)
 	if bm == nil || am == nil {
 		if string(b) != string(a) {
 			return []FieldDiff{{Field: prefix, Before: string(b), After: string(a)}}

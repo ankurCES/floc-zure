@@ -1780,7 +1780,7 @@ func (s *Store) CreateServiceBusNamespace(name, rg, location, sku string, tags m
 		Type:               "Microsoft.ServiceBus/namespaces",
 	}
 	s.data.ServiceBusNamespaces[name] = ns
-	s.persist()
+	_ = s.persist()
 	return ns, nil
 }
 
@@ -1816,7 +1816,7 @@ func (s *Store) DeleteServiceBusNamespace(name string) error {
 	delete(s.data.ServiceBusTopics, name)
 	delete(s.data.ServiceBusSubs, name)
 	delete(s.data.ServiceBusMessages, name)
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -1849,7 +1849,7 @@ func (s *Store) CreateServiceBusQueue(nsName, queueName string, maxSize int) (*S
 		Type:                     "Microsoft.ServiceBus/namespaces/queues",
 	}
 	s.data.ServiceBusQueues[nsName][queueName] = q
-	s.persist()
+	_ = s.persist()
 	return q, nil
 }
 
@@ -1886,7 +1886,7 @@ func (s *Store) DeleteServiceBusQueue(nsName, queueName string) error {
 	if msgs := s.data.ServiceBusMessages[nsName]; msgs != nil {
 		delete(msgs, queueName)
 	}
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -1918,7 +1918,7 @@ func (s *Store) CreateServiceBusTopic(nsName, topicName string, maxSize int) (*S
 		Type:                     "Microsoft.ServiceBus/namespaces/topics",
 	}
 	s.data.ServiceBusTopics[nsName][topicName] = t
-	s.persist()
+	_ = s.persist()
 	return t, nil
 }
 
@@ -1955,7 +1955,7 @@ func (s *Store) DeleteServiceBusTopic(nsName, topicName string) error {
 	if subs := s.data.ServiceBusSubs[nsName]; subs != nil {
 		delete(subs, topicName)
 	}
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -1994,7 +1994,7 @@ func (s *Store) CreateServiceBusSub(nsName, topicName, subName string, maxDelive
 	s.data.ServiceBusSubs[nsName][topicName][subName] = sub
 	// Update topic subscription count.
 	s.data.ServiceBusTopics[nsName][topicName].SubscriptionCount++
-	s.persist()
+	_ = s.persist()
 	return sub, nil
 }
 
@@ -2035,7 +2035,7 @@ func (s *Store) DeleteServiceBusSub(nsName, topicName, subName string) error {
 	if t := s.data.ServiceBusTopics[nsName][topicName]; t != nil {
 		t.SubscriptionCount--
 	}
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -2059,7 +2059,7 @@ func (s *Store) SendMessage(nsName, queueName, body, contentType, label string, 
 	}
 	s.data.ServiceBusMessages[nsName][queueName] = append(s.data.ServiceBusMessages[nsName][queueName], msg)
 	s.data.ServiceBusQueues[nsName][queueName].MessageCount++
-	s.persist()
+	_ = s.persist()
 	return &msg, nil
 }
 
@@ -2077,7 +2077,7 @@ func (s *Store) ReceiveMessage(nsName, queueName string) (*ServiceBusMessage, er
 	msg := msgs[0]
 	s.data.ServiceBusMessages[nsName][queueName] = msgs[1:]
 	s.data.ServiceBusQueues[nsName][queueName].MessageCount--
-	s.persist()
+	_ = s.persist()
 	return &msg, nil
 }
 
@@ -2127,7 +2127,7 @@ func (s *Store) CreateFunctionApp(name, rg, location, runtime, runtimeVersion st
 		Type:              "Microsoft.Web/sites",
 	}
 	s.data.FunctionApps[name] = fa
-	s.persist()
+	_ = s.persist()
 	return fa, nil
 }
 
@@ -2161,7 +2161,7 @@ func (s *Store) DeleteFunctionApp(name string) error {
 	delete(s.data.FunctionApps, name)
 	delete(s.data.Functions, name)
 	delete(s.data.FunctionInvocations, name)
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -2195,7 +2195,7 @@ func (s *Store) CreateFunction(appName, funcName, triggerType, language string, 
 		InvokeURL:   fmt.Sprintf("https://%s/api/%s", fa.DefaultHostName, funcName),
 	}
 	s.data.Functions[appName][funcName] = f
-	s.persist()
+	_ = s.persist()
 	return f, nil
 }
 
@@ -2229,7 +2229,7 @@ func (s *Store) DeleteFunction(appName, funcName string) error {
 		return fmt.Errorf("function '%s' not found in app '%s'", funcName, appName)
 	}
 	delete(m, funcName)
-	s.persist()
+	_ = s.persist()
 	return nil
 }
 
@@ -2257,7 +2257,7 @@ func (s *Store) InvokeFunction(appName, funcName, input string) (*FunctionInvoca
 		Output:       fmt.Sprintf("{\"status\":\"ok\",\"function\":\"%s\",\"echo\":%s}", funcName, input),
 	}
 	s.data.FunctionInvocations[appName] = append(s.data.FunctionInvocations[appName], inv)
-	s.persist()
+	_ = s.persist()
 	return &inv, nil
 }
 
