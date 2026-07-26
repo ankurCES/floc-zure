@@ -82,16 +82,16 @@ type WorkflowResult struct {
 
 // Config holds the azfloci configuration.
 type Config struct {
-	Subscription string            `yaml:"subscription" json:"subscription"`
-	Location     string            `yaml:"location" json:"location"`
-	OutputFormat string            `yaml:"output_format" json:"output_format"` // "json", "table", "yaml"
-	Verbose      bool              `yaml:"verbose" json:"verbose"`
-	Tags         map[string]string `yaml:"tags,omitempty" json:"tags,omitempty"`
-	Defaults     ConfigDefaults    `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+	Subscription string            `yaml:"subscription" json:"subscription" mapstructure:"subscription"`
+	Location     string            `yaml:"location" json:"location" mapstructure:"location"`
+	OutputFormat string            `yaml:"output_format" json:"output_format" mapstructure:"output_format"`
+	Verbose      bool              `yaml:"verbose" json:"verbose" mapstructure:"verbose"`
+	Tags         map[string]string `yaml:"tags,omitempty" json:"tags,omitempty" mapstructure:"tags"`
+	Defaults     ConfigDefaults    `yaml:"defaults,omitempty" json:"defaults,omitempty" mapstructure:"defaults"`
 }
 
 // ConfigDefaults holds default values for resource creation.
 type ConfigDefaults struct {
-	ResourceGroup string `yaml:"resource_group" json:"resource_group"`
-	Location      string `yaml:"location" json:"location"`
+	ResourceGroup string `yaml:"resource_group" json:"resource_group" mapstructure:"resource_group"`
+	Location      string `yaml:"location" json:"location" mapstructure:"location"`
 }
