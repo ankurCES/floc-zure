@@ -40,7 +40,13 @@ func (r *Router) Dispatch(args []string) int {
 	// Strip global flags that appear before the command: --output, -o, --query
 	cleaned := stripGlobalFlags(args)
 
-	// Try longest prefix first (2 words, then 1 word).
+	// Try longest prefix first (3 words, then 2, then 1).
+	if len(cleaned) >= 3 {
+		key := cleaned[0] + " " + cleaned[1] + " " + cleaned[2]
+		if fn, ok := r.routes[key]; ok {
+			return fn(cleaned[3:])
+		}
+	}
 	if len(cleaned) >= 2 {
 		key := cleaned[0] + " " + cleaned[1]
 		if fn, ok := r.routes[key]; ok {

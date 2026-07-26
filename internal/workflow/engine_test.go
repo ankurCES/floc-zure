@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/ankurCES/floc-zure/internal/azure"
@@ -15,19 +16,25 @@ import (
 
 // mockExec is a test-only CLIExecutor.
 type mockExec struct {
+	mu      sync.Mutex
 	runFunc func(ctx context.Context, args ...string) (*azure.CLIResult, error)
 	calls   [][]string
 }
 
 func (m *mockExec) Run(ctx context.Context, args ...string) (*azure.CLIResult, error) {
+	m.mu.Lock()
 	m.calls = append(m.calls, args)
-	if m.runFunc != nil {
-		return m.runFunc(ctx, args...)
+	fn := m.runFunc
+	m.mu.Unlock()
+	if fn != nil {
+		return fn(ctx, args...)
 	}
 	return &azure.CLIResult{Stdout: "ok"}, nil
 }
 func (m *mockExec) RunJSON(ctx context.Context, dest interface{}, args ...string) error {
+	m.mu.Lock()
 	m.calls = append(m.calls, args)
+	m.mu.Unlock()
 	return json.Unmarshal([]byte("{}"), dest)
 }
 func (m *mockExec) GetAccount(ctx context.Context) (*models.AzureAccount, error) {
@@ -222,10 +229,13 @@ func TestExecute_SimpleLinear(t *testing.T) {
 }
 
 func TestExecute_ParallelSteps(t *testing.T) {
+	var mu sync.Mutex
 	callOrder := make([]string, 0)
 	mock := &mockExec{
 		runFunc: func(ctx context.Context, args ...string) (*azure.CLIResult, error) {
+			mu.Lock()
 			callOrder = append(callOrder, args[0])
+			mu.Unlock()
 			return &azure.CLIResult{Stdout: "ok"}, nil
 		},
 	}

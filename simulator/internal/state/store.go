@@ -58,12 +58,128 @@ type Resource struct {
 	SKU        map[string]interface{} `json:"sku,omitempty"`
 }
 
+// StorageAccount mirrors az storage account show JSON output.
+type StorageAccount struct {
+	ID                string            `json:"id"`
+	Name              string            `json:"name"`
+	ResourceGroup     string            `json:"resourceGroup"`
+	Location          string            `json:"location"`
+	Kind              string            `json:"kind"`
+	SKU               StorageSKU        `json:"sku"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	ProvisioningState string            `json:"provisioningState"`
+	CreationTime      string            `json:"creationTime"`
+	PrimaryEndpoints  StorageEndpoints  `json:"primaryEndpoints"`
+	Type              string            `json:"type"`
+}
+
+// StorageSKU represents a storage account SKU.
+type StorageSKU struct {
+	Name string `json:"name"`
+	Tier string `json:"tier"`
+}
+
+// StorageEndpoints holds simulated endpoint URLs.
+type StorageEndpoints struct {
+	Blob  string `json:"blob"`
+	Queue string `json:"queue"`
+	Table string `json:"table"`
+	File  string `json:"file"`
+}
+
+// Container mirrors az storage container show JSON output.
+type Container struct {
+	Name         string            `json:"name"`
+	AccountName  string            `json:"accountName"`
+	LastModified string            `json:"lastModified"`
+	PublicAccess string            `json:"publicAccess"`
+	LeaseState   string            `json:"leaseState"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+}
+
+// Blob mirrors az storage blob show JSON output.
+type Blob struct {
+	Name         string            `json:"name"`
+	Container    string            `json:"container"`
+	AccountName  string            `json:"accountName"`
+	ContentType  string            `json:"contentType"`
+	ContentLen   int64             `json:"contentLength"`
+	LastModified string            `json:"lastModified"`
+	BlobType     string            `json:"blobType"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
+	// LocalPath stores the simulator-local file path backing this blob.
+	LocalPath string `json:"_localPath,omitempty"`
+}
+
+// KeyVault mirrors az keyvault show JSON output.
+type KeyVault struct {
+	ID                string           `json:"id"`
+	Name              string           `json:"name"`
+	ResourceGroup     string           `json:"resourceGroup"`
+	Location          string           `json:"location"`
+	Tags              map[string]string `json:"tags,omitempty"`
+	Properties        VaultProperties  `json:"properties"`
+	Type              string           `json:"type"`
+}
+
+// VaultProperties holds vault-level settings.
+type VaultProperties struct {
+	TenantID           string `json:"tenantId"`
+	SKU                VaultSKU `json:"sku"`
+	VaultURI           string `json:"vaultUri"`
+	EnableSoftDelete   bool   `json:"enableSoftDelete"`
+	ProvisioningState  string `json:"provisioningState"`
+}
+
+// VaultSKU is the key vault pricing tier.
+type VaultSKU struct {
+	Family string `json:"family"`
+	Name   string `json:"name"`
+}
+
+// VaultSecret mirrors az keyvault secret show JSON output.
+type VaultSecret struct {
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Value       string            `json:"value"`
+	VaultName   string            `json:"vaultName"`
+	Enabled     bool              `json:"enabled"`
+	Created     string            `json:"created"`
+	Updated     string            `json:"updated"`
+	ContentType string            `json:"contentType,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+	Version     string            `json:"version"`
+}
+
+// VaultKey mirrors az keyvault key show JSON output.
+type VaultKey struct {
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	VaultName string            `json:"vaultName"`
+	Enabled   bool              `json:"enabled"`
+	Created   string            `json:"created"`
+	Updated   string            `json:"updated"`
+	KeyType   string            `json:"kty"`
+	KeySize   int               `json:"key_size"`
+	KeyOps    []string          `json:"key_ops"`
+	Tags      map[string]string `json:"tags,omitempty"`
+	Version   string            `json:"version"`
+}
+
 // Data is the top-level persisted state.
 type Data struct {
 	ActiveSubscription string                   `json:"active_subscription"`
 	Subscriptions      []Subscription           `json:"subscriptions"`
 	ResourceGroups     map[string]*ResourceGroup `json:"resource_groups"`
 	Resources          map[string]*Resource      `json:"resources"`
+	// Storage
+	StorageAccounts map[string]*StorageAccount          `json:"storage_accounts,omitempty"`
+	Containers      map[string]map[string]*Container    `json:"containers,omitempty"`      // acct -> name -> container
+	Blobs           map[string]map[string]map[string]*Blob `json:"blobs,omitempty"`        // acct -> container -> blob
+	// Key Vault
+	KeyVaults    map[string]*KeyVault                `json:"key_vaults,omitempty"`
+	VaultSecrets map[string]map[string]*VaultSecret  `json:"vault_secrets,omitempty"`   // vault -> name -> secret
+	VaultKeys    map[string]map[string]*VaultKey     `json:"vault_keys,omitempty"`      // vault -> name -> key
 }
 
 // Store is a thread-safe, JSON-file-backed Azure state store.
@@ -87,12 +203,13 @@ func NewStore(filePath string) (*Store, error) {
 	s := &Store{filePath: filePath}
 
 	raw, err := os.ReadFile(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			s.data = seedData()
-			return s, s.persist()
+	if err != nil || len(raw) == 0 {
+		if err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("read state file: %w", err)
 		}
-		return nil, fmt.Errorf("read state file: %w", err)
+		// File missing or empty — seed defaults.
+		s.data = seedData()
+		return s, s.persist()
 	}
 
 	var d Data
@@ -104,6 +221,24 @@ func NewStore(filePath string) (*Store, error) {
 	}
 	if d.Resources == nil {
 		d.Resources = make(map[string]*Resource)
+	}
+	if d.StorageAccounts == nil {
+		d.StorageAccounts = make(map[string]*StorageAccount)
+	}
+	if d.Containers == nil {
+		d.Containers = make(map[string]map[string]*Container)
+	}
+	if d.Blobs == nil {
+		d.Blobs = make(map[string]map[string]map[string]*Blob)
+	}
+	if d.KeyVaults == nil {
+		d.KeyVaults = make(map[string]*KeyVault)
+	}
+	if d.VaultSecrets == nil {
+		d.VaultSecrets = make(map[string]map[string]*VaultSecret)
+	}
+	if d.VaultKeys == nil {
+		d.VaultKeys = make(map[string]map[string]*VaultKey)
 	}
 	s.data = &d
 	return s, nil
@@ -127,8 +262,14 @@ func seedData() *Data {
 				User:            User{Name: "simulator@azfloci.local", Type: "user"},
 			},
 		},
-		ResourceGroups: make(map[string]*ResourceGroup),
-		Resources:      make(map[string]*Resource),
+		ResourceGroups:  make(map[string]*ResourceGroup),
+		Resources:       make(map[string]*Resource),
+		StorageAccounts: make(map[string]*StorageAccount),
+		Containers:      make(map[string]map[string]*Container),
+		Blobs:           make(map[string]map[string]map[string]*Blob),
+		KeyVaults:       make(map[string]*KeyVault),
+		VaultSecrets:    make(map[string]map[string]*VaultSecret),
+		VaultKeys:       make(map[string]map[string]*VaultKey),
 	}
 }
 
@@ -351,4 +492,480 @@ func GenerateResourceID(subID, rgName, provider, resourceType, name string) stri
 // Timestamp returns an Azure-style timestamp string.
 func Timestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// ---------------------------------------------------------------------------
+// Storage Account CRUD
+// ---------------------------------------------------------------------------
+
+// CreateStorageAccount creates a new simulated storage account.
+func (s *Store) CreateStorageAccount(name, rg, location, kind, skuName string, tags map[string]string) (*StorageAccount, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.StorageAccounts[name]; exists {
+		return nil, fmt.Errorf("storage account '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	tier := "Standard"
+	if len(skuName) > 0 && skuName[0] == 'P' {
+		tier = "Premium"
+	}
+	sa := &StorageAccount{
+		ID:            GenerateResourceID(sub.ID, rg, "Microsoft.Storage", "storageAccounts", name),
+		Name:          name,
+		ResourceGroup: rg,
+		Location:      location,
+		Kind:          kind,
+		SKU:           StorageSKU{Name: skuName, Tier: tier},
+		Tags:          tags,
+		ProvisioningState: "Succeeded",
+		CreationTime:  Timestamp(),
+		PrimaryEndpoints: StorageEndpoints{
+			Blob:  fmt.Sprintf("https://%s.blob.core.windows.net/", name),
+			Queue: fmt.Sprintf("https://%s.queue.core.windows.net/", name),
+			Table: fmt.Sprintf("https://%s.table.core.windows.net/", name),
+			File:  fmt.Sprintf("https://%s.file.core.windows.net/", name),
+		},
+		Type: "Microsoft.Storage/storageAccounts",
+	}
+	s.data.StorageAccounts[name] = sa
+	_ = s.persist()
+	copy := *sa
+	return &copy, nil
+}
+
+// GetStorageAccount returns nil if not found.
+func (s *Store) GetStorageAccount(name string) *StorageAccount {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	sa := s.data.StorageAccounts[name]
+	if sa == nil {
+		return nil
+	}
+	copy := *sa
+	return &copy
+}
+
+// ListStorageAccounts returns all storage accounts, optionally filtered by RG.
+func (s *Store) ListStorageAccounts(rg string) []*StorageAccount {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*StorageAccount
+	for _, sa := range s.data.StorageAccounts {
+		if rg == "" || sa.ResourceGroup == rg {
+			copy := *sa
+			out = append(out, &copy)
+		}
+	}
+	return out
+}
+
+// DeleteStorageAccount removes a storage account and all its containers/blobs.
+func (s *Store) DeleteStorageAccount(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.StorageAccounts[name]; !ok {
+		return fmt.Errorf("storage account '%s' not found", name)
+	}
+	delete(s.data.StorageAccounts, name)
+	delete(s.data.Containers, name)
+	delete(s.data.Blobs, name)
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// Container CRUD
+// ---------------------------------------------------------------------------
+
+// CreateContainer creates a blob container inside a storage account.
+func (s *Store) CreateContainer(account, name string) (*Container, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.StorageAccounts[account]; !ok {
+		return nil, fmt.Errorf("storage account '%s' not found", account)
+	}
+	if s.data.Containers[account] == nil {
+		s.data.Containers[account] = make(map[string]*Container)
+	}
+	if _, exists := s.data.Containers[account][name]; exists {
+		return nil, fmt.Errorf("container '%s' already exists in account '%s'", name, account)
+	}
+	c := &Container{
+		Name:         name,
+		AccountName:  account,
+		LastModified: Timestamp(),
+		PublicAccess: "off",
+		LeaseState:   "available",
+	}
+	s.data.Containers[account][name] = c
+	_ = s.persist()
+	copy := *c
+	return &copy, nil
+}
+
+// GetContainer returns nil if not found.
+func (s *Store) GetContainer(account, name string) *Container {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	acctMap := s.data.Containers[account]
+	if acctMap == nil {
+		return nil
+	}
+	c := acctMap[name]
+	if c == nil {
+		return nil
+	}
+	copy := *c
+	return &copy
+}
+
+// ListContainers lists all containers in a storage account.
+func (s *Store) ListContainers(account string) []*Container {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*Container
+	for _, c := range s.data.Containers[account] {
+		copy := *c
+		out = append(out, &copy)
+	}
+	return out
+}
+
+// DeleteContainer removes a container and all its blobs.
+func (s *Store) DeleteContainer(account, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	acctMap := s.data.Containers[account]
+	if acctMap == nil || acctMap[name] == nil {
+		return fmt.Errorf("container '%s' not found in account '%s'", name, account)
+	}
+	delete(acctMap, name)
+	if blobMap, ok := s.data.Blobs[account]; ok {
+		delete(blobMap, name)
+	}
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// Blob CRUD
+// ---------------------------------------------------------------------------
+
+// CreateBlob creates (or overwrites) a blob in a container.
+func (s *Store) CreateBlob(account, container, name, contentType string, size int64, localPath string) (*Blob, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	acctContainers := s.data.Containers[account]
+	if acctContainers == nil || acctContainers[container] == nil {
+		return nil, fmt.Errorf("container '%s' not found in account '%s'", container, account)
+	}
+	if s.data.Blobs[account] == nil {
+		s.data.Blobs[account] = make(map[string]map[string]*Blob)
+	}
+	if s.data.Blobs[account][container] == nil {
+		s.data.Blobs[account][container] = make(map[string]*Blob)
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+	b := &Blob{
+		Name:         name,
+		Container:    container,
+		AccountName:  account,
+		ContentType:  contentType,
+		ContentLen:   size,
+		LastModified: Timestamp(),
+		BlobType:     "BlockBlob",
+		LocalPath:    localPath,
+	}
+	s.data.Blobs[account][container][name] = b
+	_ = s.persist()
+	copy := *b
+	return &copy, nil
+}
+
+// GetBlob returns nil if not found.
+func (s *Store) GetBlob(account, container, name string) *Blob {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	acct := s.data.Blobs[account]
+	if acct == nil {
+		return nil
+	}
+	cont := acct[container]
+	if cont == nil {
+		return nil
+	}
+	b := cont[name]
+	if b == nil {
+		return nil
+	}
+	copy := *b
+	return &copy
+}
+
+// ListBlobs lists all blobs in a container.
+func (s *Store) ListBlobs(account, container string) []*Blob {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*Blob
+	acct := s.data.Blobs[account]
+	if acct == nil {
+		return out
+	}
+	for _, b := range acct[container] {
+		copy := *b
+		out = append(out, &copy)
+	}
+	return out
+}
+
+// DeleteBlob removes a blob.
+func (s *Store) DeleteBlob(account, container, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	acct := s.data.Blobs[account]
+	if acct == nil {
+		return fmt.Errorf("blob '%s' not found", name)
+	}
+	cont := acct[container]
+	if cont == nil || cont[name] == nil {
+		return fmt.Errorf("blob '%s' not found in container '%s'", name, container)
+	}
+	delete(cont, name)
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// Key Vault CRUD
+// ---------------------------------------------------------------------------
+
+// CreateKeyVault creates a new simulated key vault.
+func (s *Store) CreateKeyVault(name, rg, location, skuName string, tags map[string]string) (*KeyVault, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, exists := s.data.KeyVaults[name]; exists {
+		return nil, fmt.Errorf("vault '%s' already exists", name)
+	}
+	sub := s.activeSub()
+	kv := &KeyVault{
+		ID:            GenerateResourceID(sub.ID, rg, "Microsoft.KeyVault", "vaults", name),
+		Name:          name,
+		ResourceGroup: rg,
+		Location:      location,
+		Tags:          tags,
+		Properties: VaultProperties{
+			TenantID:          sub.TenantID,
+			SKU:               VaultSKU{Family: "A", Name: skuName},
+			VaultURI:          fmt.Sprintf("https://%s.vault.azure.net/", name),
+			EnableSoftDelete:  true,
+			ProvisioningState: "Succeeded",
+		},
+		Type: "Microsoft.KeyVault/vaults",
+	}
+	s.data.KeyVaults[name] = kv
+	_ = s.persist()
+	copy := *kv
+	return &copy, nil
+}
+
+// GetKeyVault returns nil if not found.
+func (s *Store) GetKeyVault(name string) *KeyVault {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	kv := s.data.KeyVaults[name]
+	if kv == nil {
+		return nil
+	}
+	copy := *kv
+	return &copy
+}
+
+// ListKeyVaults returns all vaults, optionally filtered by RG.
+func (s *Store) ListKeyVaults(rg string) []*KeyVault {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*KeyVault
+	for _, kv := range s.data.KeyVaults {
+		if rg == "" || kv.ResourceGroup == rg {
+			copy := *kv
+			out = append(out, &copy)
+		}
+	}
+	return out
+}
+
+// DeleteKeyVault removes a vault and all its secrets/keys.
+func (s *Store) DeleteKeyVault(name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.KeyVaults[name]; !ok {
+		return fmt.Errorf("vault '%s' not found", name)
+	}
+	delete(s.data.KeyVaults, name)
+	delete(s.data.VaultSecrets, name)
+	delete(s.data.VaultKeys, name)
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// Vault Secret CRUD
+// ---------------------------------------------------------------------------
+
+// SetSecret creates or updates a secret in a vault (returns the new version).
+func (s *Store) SetSecret(vaultName, name, value, contentType string, tags map[string]string) (*VaultSecret, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.KeyVaults[vaultName]; !ok {
+		return nil, fmt.Errorf("vault '%s' not found", vaultName)
+	}
+	if s.data.VaultSecrets[vaultName] == nil {
+		s.data.VaultSecrets[vaultName] = make(map[string]*VaultSecret)
+	}
+	now := Timestamp()
+	version := fmt.Sprintf("%d", time.Now().UnixNano())
+	sec := &VaultSecret{
+		ID:          fmt.Sprintf("https://%s.vault.azure.net/secrets/%s/%s", vaultName, name, version),
+		Name:        name,
+		Value:       value,
+		VaultName:   vaultName,
+		Enabled:     true,
+		Created:     now,
+		Updated:     now,
+		ContentType: contentType,
+		Tags:        tags,
+		Version:     version,
+	}
+	s.data.VaultSecrets[vaultName][name] = sec
+	_ = s.persist()
+	copy := *sec
+	return &copy, nil
+}
+
+// GetSecret returns nil if not found.
+func (s *Store) GetSecret(vaultName, name string) *VaultSecret {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	vm := s.data.VaultSecrets[vaultName]
+	if vm == nil {
+		return nil
+	}
+	sec := vm[name]
+	if sec == nil {
+		return nil
+	}
+	copy := *sec
+	return &copy
+}
+
+// ListSecrets lists all secrets in a vault.
+func (s *Store) ListSecrets(vaultName string) []*VaultSecret {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*VaultSecret
+	for _, sec := range s.data.VaultSecrets[vaultName] {
+		copy := *sec
+		out = append(out, &copy)
+	}
+	return out
+}
+
+// DeleteSecret removes a secret from a vault.
+func (s *Store) DeleteSecret(vaultName, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vm := s.data.VaultSecrets[vaultName]
+	if vm == nil || vm[name] == nil {
+		return fmt.Errorf("secret '%s' not found in vault '%s'", name, vaultName)
+	}
+	delete(vm, name)
+	return s.persist()
+}
+
+// ---------------------------------------------------------------------------
+// Vault Key CRUD
+// ---------------------------------------------------------------------------
+
+// CreateKey creates a new key in a vault.
+func (s *Store) CreateKey(vaultName, name, kty string, keySize int, tags map[string]string) (*VaultKey, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.data.KeyVaults[vaultName]; !ok {
+		return nil, fmt.Errorf("vault '%s' not found", vaultName)
+	}
+	if s.data.VaultKeys[vaultName] == nil {
+		s.data.VaultKeys[vaultName] = make(map[string]*VaultKey)
+	}
+	now := Timestamp()
+	version := fmt.Sprintf("%d", time.Now().UnixNano())
+	ops := []string{"encrypt", "decrypt", "sign", "verify", "wrapKey", "unwrapKey"}
+	key := &VaultKey{
+		ID:        fmt.Sprintf("https://%s.vault.azure.net/keys/%s/%s", vaultName, name, version),
+		Name:      name,
+		VaultName: vaultName,
+		Enabled:   true,
+		Created:   now,
+		Updated:   now,
+		KeyType:   kty,
+		KeySize:   keySize,
+		KeyOps:    ops,
+		Tags:      tags,
+		Version:   version,
+	}
+	s.data.VaultKeys[vaultName][name] = key
+	_ = s.persist()
+	copy := *key
+	return &copy, nil
+}
+
+// GetKey returns nil if not found.
+func (s *Store) GetKey(vaultName, name string) *VaultKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	vm := s.data.VaultKeys[vaultName]
+	if vm == nil {
+		return nil
+	}
+	key := vm[name]
+	if key == nil {
+		return nil
+	}
+	copy := *key
+	return &copy
+}
+
+// ListKeys lists all keys in a vault.
+func (s *Store) ListKeys(vaultName string) []*VaultKey {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var out []*VaultKey
+	for _, k := range s.data.VaultKeys[vaultName] {
+		copy := *k
+		out = append(out, &copy)
+	}
+	return out
+}
+
+// DeleteKey removes a key from a vault.
+func (s *Store) DeleteKey(vaultName, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	vm := s.data.VaultKeys[vaultName]
+	if vm == nil || vm[name] == nil {
+		return fmt.Errorf("key '%s' not found in vault '%s'", name, vaultName)
+	}
+	delete(vm, name)
+	return s.persist()
+}
+
+// activeSub returns the active subscription (caller must hold at least RLock).
+func (s *Store) activeSub() *Subscription {
+	for i := range s.data.Subscriptions {
+		if s.data.Subscriptions[i].IsDefault {
+			return &s.data.Subscriptions[i]
+		}
+	}
+	if len(s.data.Subscriptions) > 0 {
+		return &s.data.Subscriptions[0]
+	}
+	return nil
 }
