@@ -1,0 +1,34 @@
+# Binaries
+azfloci
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+/dist/
+
+# Test
+*.test
+*.out
+coverage.html
+coverage.txt
+
+# Dependencies
+/vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build
+*.log
+tmp/
+
+# Config overrides
+*.local.yaml
+*.local.json
