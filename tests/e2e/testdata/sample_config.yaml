@@ -1,0 +1,10 @@
+subscription: "test-sub-id"
+location: "eastus"
+output_format: "json"
+verbose: false
+tags:
+  environment: "test"
+  team: "e2e"
+defaults:
+  resource_group: "azfloci-default-rg"
+  location: "eastus"

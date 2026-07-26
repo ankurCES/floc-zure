@@ -1,0 +1,8 @@
+name: "invalid-workflow"
+steps:
+  - name: "step-a"
+    command: "group create"
+    depends_on: ["step-b"]
+  - name: "step-b"
+    command: "group show"
+    depends_on: ["step-a"]
